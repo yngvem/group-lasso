@@ -5,6 +5,43 @@ import numpy.linalg as la
 import numpy as np
 
 DEBUG = True
+LIPSCHITZ_MAXITS = 100000
+LIPSCHITS_TOL = 1e-2
+
+
+def _find_largest_singular_value(X):
+    v = np.random.randn(X.shape[1], 1)
+    s = la.norm(v)
+    v /= s
+    for i in range(LIPSCHITZ_MAXITS):
+        v = X.T@(X@v)
+        s_ = la.norm(v)
+        v /= s_
+
+        # The absolute value signs should be unnecessary
+        # I think the singular value approximation will
+        # converge monotonically, but I'll add them for
+        # safety.
+        improvement = abs(s_ - s)/max(abs(s_), abs(s))
+        if improvement < LIPSCHITS_TOL and i > 0:
+            return s_
+        s = s_
+
+        if DEBUG:
+            print(f'Finished {i}th power iteration:\n'
+                    f'\tL={sqrt(s)}\n'
+                    f'\tImprovement: {improvement:03g}')
+
+    raise RuntimeError(
+        f'Could not find an estimate for the largest singular value of X'
+        f'with the power method. \n'
+        f'Ran for {LIPSCHITS_TOL:d} iterations with a tolerance of'
+        f'{LIPSCHITS_TOL:02g}')
+
+def _l2_prox(w, reg):
+    """The proximal operator for reg*||w||_2 (not squared).
+    """
+    return max(0, 1 - reg/la.norm(w))*w
 
 
 class GroupLassoRegressor:
@@ -28,10 +65,10 @@ class GroupLassoRegressor:
     # TODO: Change groups from list of sets to start and end indices
     # TODO: Estimate smallest singular value and use adaptive FISTA
     # TODO: Accept separate regularisation coefficients for each group
-    LIPSCHITZ_MAXITS = 100000
-    LIPSCHITS_TOL = 1e-2
+    # TODO: Follow the sklearn API
+    # TODO: Tests
 
-    def __init__(self, groups, reg=0.05, max_its=1000, tol=1e-5):
+    def __init__(self, groups=None, reg=0.05, n_iter=1000, tol=1e-5):
         """
 
         Arguments
@@ -46,19 +83,10 @@ class GroupLassoRegressor:
             [(0, 5), (3, 8)] is not possible, whereas the groups
             [(0, 5) ,(5, 8)] is possible.
         """
-        for group1, group2 in zip(groups[:-1], groups[1:]):
-            assert group1[0] < group1[1]
-            assert group1[1] <= group2[0]
-
         self.groups = groups
-
-        assert reg >= 0
+        self._reset_groups = False
         self.reg = reg
-
-        assert max_its > 0
-        self.max_its = max_its
-
-        assert tol > 0
+        self.n_iter = n_iter
         self.tol = tol
 
     def _SSE(self, w):
@@ -84,44 +112,12 @@ class GroupLassoRegressor:
     def _grad(self, w):
         return self.X.T@(self.X@w - self.y)/len(self.X)
 
-    def _l2_prox(self, w, reg):
-        return max(0, 1 - reg/la.norm(w))*w
-
     def _prox(self, w):
         w = w.copy()
         for start, end in self.groups:
             reg = self.reg*sqrt(end - start)
-            w[start:end, :] = self._l2_prox(w[start:end, :], reg)
+            w[start:end, :] = _l2_prox(w[start:end, :], reg)
         return w
-
-    def _find_largest_singular_value(self):
-        v = np.random.randn(self.X.shape[1], 1)
-        s = la.norm(v)
-        v /= s
-        for i in range(self.LIPSCHITZ_MAXITS):
-            v = self.X.T@(self.X@v)
-            s_ = la.norm(v)
-            v /= s_
-
-            # The absolute value signs should be unnecessary
-            # I think the singular value approximation will
-            # converge monotonically, but I'll add them for
-            # safety.
-            improvement = abs(s_ - s)/max(abs(s_), abs(s))
-            if improvement < self.LIPSCHITS_TOL and i > 0:
-                return s_
-            s = s_
-
-            if DEBUG:
-                print(f'Finished {i}th power iteration:\n'
-                      f'\tL={sqrt(s)}\n'
-                      f'\tImprovement: {improvement:03g}')
-
-        raise RuntimeError(
-            f'Could not find an estimate for the largest singular value of X'
-            f'with the power method. \n'
-            f'Ran for {self.LIPSCHITS_TOL:d} iterations with a tolerance of'
-            f'{self.LIPSCHITS_TOL:02g}')
 
     def _fista_it(self, x, y, t):
         L = self.lipschitz_coef
@@ -147,7 +143,7 @@ class GroupLassoRegressor:
 
         best_loss = self.loss
 
-        for i in range(self.max_its):
+        for i in range(self.n_iter):
 
             x_, y_, t = self._fista_it(x, y, t)
             if self._should_restart_momentum(x_, y_, x, y):
@@ -180,6 +176,18 @@ class GroupLassoRegressor:
         )
 
     def _init_fit(self, X, y):
+        if self.groups is None or self._reset_groups:
+            self._reset_groups = True
+            self.groups = [(i, i+1) for i, _ in range(X.shape[1])]
+        
+        for group1, group2 in zip(self.groups[:-1], self.groups[1:]):
+            assert group1[0] < group1[1]
+            assert group1[1] <= group2[0]
+
+        assert self.reg >= 0
+        assert self.n_iter > 0
+        assert self.tol > 0
+
         if len(y.shape) != 1:
             assert y.shape[1] == 1
         else:
@@ -192,7 +200,7 @@ class GroupLassoRegressor:
 
         if DEBUG:
             print('Finding Lipschitz coefficient')
-        s1 = self._find_largest_singular_value()
+        s1 = _find_largest_singular_value(X)
         self.lipschitz_coef = s1 * 1.3 / len(self.X)
 
     def fit(self, X, y):
@@ -245,7 +253,7 @@ if __name__ == '__main__':
     y = X@w
     y += np.random.randn(*y.shape)*noise_level*y
 
-    gl = GroupLassoRegressor(groups=groups, max_its=100, reg=0.1)
+    gl = GroupLassoRegressor(groups=groups, n_iter=100, reg=0.1)
     gl.fit(X, y)
 
     plt.plot(w, '.', label='True weights')
