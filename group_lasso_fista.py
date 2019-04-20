@@ -198,6 +198,13 @@ class GroupLassoRegressor:
     def fit(self, X, y):
         self._init_fit(X, y)
         self.fista()
+    
+    def predict(self, X):
+        return X@self.coef_
+    
+    def fit_predict(self, X, y):
+        self.fit(X, y)
+        return self.predict(X)
 
 
 def generate_group_lasso_coefficients(
