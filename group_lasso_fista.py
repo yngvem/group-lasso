@@ -5,38 +5,63 @@ import numpy.linalg as la
 import numpy as np
 
 DEBUG = True
-LIPSCHITZ_MAXITS = 100000
+LIPSCHITZ_MAXITS = 50
 LIPSCHITS_TOL = 1e-2
 
 
-def _find_largest_singular_value(X):
+def _subsample(rate, *Xs):
+    num_rows = len(Xs[0])
+    subsampled_rows = int(num_rows*rate)
+    if rate < 1:
+        inds = np.random.choice(len(X), subsampled_rows, replace=False)
+        inds.sort()
+
+        if len(Xs) == 1:
+            return Xs[0][inds, :]
+        return tuple([X[inds, :] for X in Xs])
+    else:
+        if len(Xs) == 1:
+            return Xs[0]
+        return Xs
+
+
+def _find_largest_singular_value(
+    X, subsampling_rate=1, maxits=LIPSCHITZ_MAXITS, tol=LIPSCHITS_TOL
+):
     v = np.random.randn(X.shape[1], 1)
     s = la.norm(v)
     v /= s
-    for i in range(LIPSCHITZ_MAXITS):
-        v = X.T@(X@v)
+    for i in range(maxits):
+        # I should double check that this actually works
+        X_ = _subsample(subsampling_rate, X)
+
+        v = X_.T@(X_@v)
         s_ = la.norm(v)
         v /= s_
+        s_ /= subsampling_rate
 
         # The absolute value signs should be unnecessary
         # I think the singular value approximation will
         # converge monotonically, but I'll add them for
         # safety.
         improvement = abs(s_ - s)/max(abs(s_), abs(s))
-        if improvement < LIPSCHITS_TOL and i > 0:
-            return s_
         s = s_
+        if improvement < tol and i > 0:
+            return s
 
         if DEBUG:
             print(f'Finished {i}th power iteration:\n'
-                    f'\tL={sqrt(s)}\n'
-                    f'\tImprovement: {improvement:03g}')
+                  f'\tL={sqrt(s)}\n'
+                  f'\tImprovement: {improvement:03g}')
 
-    raise RuntimeError(
+    warnings.warn(
         f'Could not find an estimate for the largest singular value of X'
         f'with the power method. \n'
-        f'Ran for {LIPSCHITS_TOL:d} iterations with a tolerance of'
-        f'{LIPSCHITS_TOL:02g}')
+        f'Ran for {maxits:d} iterations with a tolerance of {tol:02g}',
+        RuntimeWarning
+    )
+    return s
+
 
 def _l2_prox(w, reg):
     """The proximal operator for reg*||w||_2 (not squared).
@@ -48,7 +73,9 @@ class GroupLassoRegressor:
     """
     This class implements the Group Lasso [1] penalty for linear regression.
     The loss is optimised using the FISTA algorithm proposed in [2] with the
-    generalised gradient-based restarting scheeme proposed in [3].
+    generalised gradient-based restarting scheme proposed in [3].
+
+
 
 
     [1]: Yuan M, Lin Y. Model selection and estimation in regression with
@@ -68,7 +95,9 @@ class GroupLassoRegressor:
     # TODO: Follow the sklearn API
     # TODO: Tests
 
-    def __init__(self, groups=None, reg=0.05, n_iter=1000, tol=1e-5):
+    def __init__(
+        self, groups=None, reg=0.05, n_iter=1000, tol=1e-5, subsampling_rate=1
+    ):
         """
 
         Arguments
@@ -82,18 +111,27 @@ class GroupLassoRegressor:
             The groups must be non-overlapping, thus the groups
             [(0, 5), (3, 8)] is not possible, whereas the groups
             [(0, 5) ,(5, 8)] is possible.
+        reg : float or iterable
+            The regularisation coefficient(s). If ``reg`` is an
+            iterable, then it should have the same length as
+            ``groups``.
+        n_iter : int
+            The maximum number of iterations to perform
+        tol : float
+            The convergence tolerance. The optimisation algorithm
+            will stop once ||x_{n+1} - x_n|| < ``tol``.
+        subsampling_rate : float
+            The subsampling rate used for the gradient computations.
+            Should be in the range (0, 1]. The gradient will be
+            computed from a random matrix of size
+            ``subsampling_rate * len(X)``.
         """
         self.groups = groups
         self._reset_groups = False
         self.reg = reg
         self.n_iter = n_iter
         self.tol = tol
-
-    def _SSE(self, w):
-        return np.sum((self.X@w - self.y)**2)
-
-    def _MSE(self, w):
-        return self._SSE(w)/len(self.X)
+        self.subsampling_rate = subsampling_rate
 
     def _regularizer(self, w):
         regularizer = 0
@@ -102,74 +140,88 @@ class GroupLassoRegressor:
             regularizer += reg*la.norm(w[start:end, :])
         return regularizer
 
-    def _loss(self, w):
-        return self._MSE(w) + self._regularizer(w)
+    def _loss(self, X, y, w):
+        MSE = np.sum((X@w - y)**2)/len(X)
+        return MSE + self._regularizer(w)
 
-    @property
-    def loss(self):
-        return self._loss(self.coef_)
+    def loss(self, X, y):
+        return self._loss(X, y, self.coef_)
 
-    def _grad(self, w):
-        return self.X.T@(self.X@w - self.y)/len(self.X)
-
-    def _prox(self, w):
-        w = w.copy()
-        for start, end in self.groups:
-            reg = self.reg*sqrt(end - start)
-            w[start:end, :] = _l2_prox(w[start:end, :], reg)
-        return w
-
-    def _fista_it(self, x, y, t):
-        L = self.lipschitz_coef
-        x_ = self._prox(y - self._grad(y)/L)
+    def _fista_it(self, u, v, t, L, grad, prox):
+        u_ = prox(v - grad(v)/L)
         t_ = 0.5 + 0.5*sqrt(1 + 4*t**2)
-        dx = x_ - x
+        du = u_ - u
+        v_ = u_ + du*(t-1)/t_
 
-        y = x_ + dx*(t-1)/t_
+        if (v - u_).T@(u_ - u) > 0:
+            if DEBUG:
+                print('Restarting')
+            u_, v_, t = self._fista_it(
+                self.coef_, self.coef_, 1, L, grad, prox
+            )
 
-        x = x_
+        u = u_
         t = t_
+        v = v_
 
-        return x, y, t
+        return u, v, t
 
-    def _should_restart_momentum(self, x_, y_, x, y):
-        # return self._loss(y_) > self._loss(y)
-        return (y - x_).T@(x_ - x) > 0
+    def _fista(self, X, y, lipschitz_coef=None):
+        """Use the FISTA algorithm to solve the group lasso regularised loss.
+        """
+        if lipschitz_coef is None:
+            lipschitz_coef = _find_largest_singular_value(
+                X, subsampling_rate=self.subsampling_rate
+            )*1.1/len(X)
 
-    def fista(self):
-        x = self.coef_
-        y = self.coef_
+        def grad(w):
+            """A sampled approximation to the gradient of the MSE loss
+            """
+            X_, y_ = _subsample(self.subsampling_rate, X, y)
+            return X_.T@(X_@w - y_)/len(X_)
+
+        def prox(w):
+            """The proximal map for the specified coefficients.
+            """
+            w = w.copy()
+            for start, end in self.groups:
+                reg = self.reg*sqrt(end - start)
+                w[start:end, :] = _l2_prox(w[start:end, :], reg)
+            return w
+
+        u = self.coef_
+        v = self.coef_
         t = 1
 
-        best_loss = self.loss
+        if DEBUG:
+            X_, y_ = _subsample(self.subsampling_rate, X, y)
+            print(f'Starting FISTA: ')
+            print(f'\tInitial loss: {self.loss(X_, y_)}')
+
 
         for i in range(self.n_iter):
+            u_, v, t = self._fista_it(u, v, t, lipschitz_coef, grad, prox)
 
-            x_, y_, t = self._fista_it(x, y, t)
-            if self._should_restart_momentum(x_, y_, x, y):
-                if DEBUG:
-                    print('Restarting')
-                x_, y_, t = self._fista_it(self.coef_, self.coef_, 1)
+            du = u_ - u
+            u = u_
+            self.coef_ = u
 
-            dx = x_ - x
-            y = y_
-            x = x_
-
-            stopping_criteria = la.norm(dx)/(la.norm(x) + 1e-10)
+            stopping_criteria = la.norm(du)/(la.norm(u) + 1e-10)
 
             if DEBUG:
+                X_, y_ = _subsample(self.subsampling_rate, X, y)
                 print(f'Completed the {i}th iteration:')
-                print(f'\tLoss: {self.loss}')
-                print(f'\tStopping criteria: {stopping_criteria}')
-
-            if self._loss(x) < best_loss:
-                self.coef_ = x
+                print(f'\tLoss: {self.loss(X_, y_)}')
+                print(f'\tStopping criteria: {stopping_criteria:.5g}')
+                print(f'\tWeight norm: {la.norm(self.coef_)}')
 
             if stopping_criteria < self.tol:
                 return
 
         warnings.warn(
             'The FISTA iterations did not converge to a sufficient minimum.\n'
+            f'Your subsampling rate is {self.subsampling_rate:g}, if this is '
+            'close to zero, then you cannot expect convergence.\n'
             'Try increasing the number of iterations '
             'or decreasing the tolerance.',
             RuntimeWarning
@@ -187,25 +239,19 @@ class GroupLassoRegressor:
         assert self.reg >= 0
         assert self.n_iter > 0
         assert self.tol > 0
+        assert self.subsampling_rate > 0 and self.subsampling_rate <= 1
 
         if len(y.shape) != 1:
             assert y.shape[1] == 1
         else:
             y = y.reshape(-1, 1)
 
-        self.X = X
-        self.y = y
         self.coef_ = np.random.randn(X.shape[1], 1)
         self.coef_ /= la.norm(self.coef_)
 
-        if DEBUG:
-            print('Finding Lipschitz coefficient')
-        s1 = _find_largest_singular_value(X)
-        self.lipschitz_coef = s1 * 1.3 / len(self.X)
-
-    def fit(self, X, y):
+    def fit(self, X, y, lipschitz_coef=None):
         self._init_fit(X, y)
-        self.fista()
+        self._fista(X, y, lipschitz_coef=lipschitz_coef)
     
     def predict(self, X):
         return X@self.coef_
@@ -241,19 +287,25 @@ if __name__ == '__main__':
 
     np.random.seed(0)
 
-    group_sizes = [np.random.randint(3, 10) for i in range(100)]
+    group_sizes = [np.random.randint(3, 10) for i in range(50)]
     groups = get_groups_from_group_sizes(group_sizes)
     num_coeffs = sum(group_sizes)
-    num_datapoints = 100000
+    num_datapoints = 10000000
     noise_level = 0.5
 
+    print('Generating data')
     X = np.random.randn(num_datapoints, num_coeffs)
+    print('Generating coefficients')
     w = generate_group_lasso_coefficients(group_sizes, noise_level=0.05)
 
+    print('Generating targets')
     y = X@w
     y += np.random.randn(*y.shape)*noise_level*y
 
-    gl = GroupLassoRegressor(groups=groups, n_iter=100, reg=0.1)
+    gl = GroupLassoRegressor(
+        groups=groups, n_iter=50, tol=0.1, reg=0.1, subsampling_rate=0.001
+    )
+    print('Starting fit')
     gl.fit(X, y)
 
     plt.plot(w, '.', label='True weights')
