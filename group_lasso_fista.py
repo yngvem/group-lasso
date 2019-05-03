@@ -256,6 +256,7 @@ class GroupLassoRegressor:
             assert group1[1] <= group2[0]
 
         assert all(reg > 0 for reg in self.reg)
+        assert len(self.reg) == len(self.groups)
         assert self.n_iter > 0
         assert self.tol > 0
         assert self.subsampling_rate > 0 and self.subsampling_rate <= 1
