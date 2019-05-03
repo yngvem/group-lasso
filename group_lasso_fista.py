@@ -114,9 +114,7 @@ class GroupLassoRegressor:
          2015 Jun 1;15(3):715-32.
     """
     # TODO: Document code
-    # TODO: Change groups from list of sets to start and end indices
     # TODO: Estimate smallest singular value and use adaptive FISTA
-    # TODO: Accept separate regularisation coefficients for each group
     # TODO: Follow the sklearn API
     # TODO: Tests
 
