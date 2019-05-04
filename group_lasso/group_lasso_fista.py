@@ -5,70 +5,11 @@ import warnings
 import numpy.linalg as la
 import numpy as np
 
+from .singular_values import find_largest_singular_value
+from ._subsampling import subsample, subsampling_fraction
+
+
 DEBUG = True
-LIPSCHITZ_MAXITS = 50
-LIPSCHITS_TOL = 1e-2
-
-
-def _extract_from_singleton_tuple(inputs):
-    if len(inputs) == 1:
-        return inputs[0]
-    return inputs
-
-
-def _subsample(rate, *Xs):
-    """Subsample along first (0-th) axis of the Xs arrays.
-    """
-    assert len(Xs) > 0
-    assert rate <= 1
-
-    if rate == 1:
-        return _extract_from_singleton_tuple(Xs)
-
-    num_rows = len(Xs[0])
-    num_subsampled_rows = int(num_rows*rate)
-    inds = np.random.choice(len(X), num_subsampled_rows, replace=False)
-    inds.sort()
-
-    return _extract_from_singleton_tuple(tuple([X[inds, :] for X in Xs]))
-
-
-def _find_largest_singular_value(
-    X, subsampling_rate=1, maxits=LIPSCHITZ_MAXITS, tol=LIPSCHITS_TOL
-):
-    """Find the largest singular value of X.
-    """
-    v = np.random.randn(X.shape[1], 1)
-    s = la.norm(v)
-    v /= s
-    for i in range(maxits):
-        # I should double check that this actually works
-        X_ = _subsample(subsampling_rate, X)
-
-        v = X_.T@(X_@v)
-        s_ = la.norm(v)
-        v /= s_
-        s_ /= subsampling_rate
-
-        # Absolute value is necessary because of subsampling
-        improvement = abs(s_ - s)/max(abs(s_), abs(s))
-        s = s_
-        if improvement < tol and i > 0:
-            return s
-
-        if DEBUG:
-            print(f'Finished {i}th power iteration:\n'
-                  f'\tL={sqrt(s)}\n'
-                  f'\tImprovement: {improvement:03g}')
-
-    warnings.warn(
-        f'Could not find an estimate for the largest singular value of X'
-        f'with the power method. \n'
-        f'Ran for {maxits:d} iterations with a tolerance of {tol:02g}'
-        f'Subsampling {"is" if subsampling_rate != 1 else "is not"} used.',
-        RuntimeWarning
-    )
-    return s
 
 
 def _l2_prox(w, reg):
@@ -81,9 +22,10 @@ def _l2_grad(A, x, b):
     return A.T@(A@x - b)
 
 
-def _subsampled_l2_grad(A, x, b, rate):
-    A, b = _subsample(rate, A, b)
-    return _l2_grad(A, x, b)
+def _subsampled_l2_grad(A, x, b, subsampling_scheme):
+    rate = subsampling_fraction(len(A), subsampling_scheme)
+    A, b = subsample(subsampling_scheme, A, b)
+    return _l2_grad(A, x, b)/rate
 
 
 def _group_l2_prox(w, reg_coeffs, groups):
@@ -114,12 +56,19 @@ class GroupLassoRegressor:
          2015 Jun 1;15(3):715-32.
     """
     # TODO: Document code
-    # TODO: Estimate smallest singular value and use adaptive FISTA
+    # TODO: Estimate smallest singular value and use improved FISTA iterations
+    # The imporved fista iterations are outlined in Faster FISTA by Schoenlieb
     # TODO: Follow the sklearn API
     # TODO: Tests
 
     def __init__(
-        self, groups=None, reg=0.05, n_iter=1000, tol=1e-5, subsampling_rate=1
+        self,
+        groups=None,
+        reg=0.05,
+        n_iter=1000,
+        tol=1e-5,
+        subsampling_scheme=1,
+        sqrt_subsampling=False
     ):
         """
 
@@ -143,18 +92,18 @@ class GroupLassoRegressor:
         tol : float
             The convergence tolerance. The optimisation algorithm
             will stop once ||x_{n+1} - x_n|| < ``tol``.
-        subsampling_rate : float
+        subsampling_scheme : float
             The subsampling rate used for the gradient computations.
             Should be in the range (0, 1]. The gradient will be
             computed from a random matrix of size
-            ``subsampling_rate * len(X)``.
+            ``subsampling_scheme * len(X)``.
         """
         self.groups = groups
         self._reset_groups = False
         self.reg = self._get_reg_vector(reg)
         self.n_iter = n_iter
         self.tol = tol
-        self.subsampling_rate = subsampling_rate
+        self.subsampling_scheme = subsampling_scheme
 
     def _regularizer(self, w):
         regularizer = 0
@@ -199,12 +148,13 @@ class GroupLassoRegressor:
         num_rows, num_cols = X.shape
 
         if lipschitz_coef is None:
-            lipschitz_coef = _find_largest_singular_value(
-                X, subsampling_rate=self.subsampling_rate
-            )*1.1/num_rows
+            lipschitz_coef = (find_largest_singular_value(
+                X, subsampling_scheme=self.subsampling_scheme
+            )**2)*1.5/num_rows
 
         def grad(w):
-            return _subsampled_l2_grad(X, w, y, self.subsampling_rate)/num_rows
+            SSE_grad = _subsampled_l2_grad(X, w, y, self.subsampling_scheme)
+            return SSE_grad/num_rows
 
         def prox(w):
             return _group_l2_prox(w, self.reg, self.groups)
@@ -214,7 +164,7 @@ class GroupLassoRegressor:
         t = 1
 
         if DEBUG:
-            X_, y_ = _subsample(self.subsampling_rate, X, y)
+            X_, y_ = subsample(self.subsampling_scheme, X, y)
             print(f'Starting FISTA: ')
             print(f'\tInitial loss: {self.loss(X_, y_)}')
 
@@ -228,20 +178,20 @@ class GroupLassoRegressor:
             stopping_criteria = la.norm(du)/(la.norm(u) + 1e-10)
 
             if DEBUG:
-                X_, y_ = _subsample(self.subsampling_rate, X, y)
+                X_, y_ = subsample(self.subsampling_scheme, X, y)
                 print(f'Completed the {i}th iteration:')
                 print(f'\tLoss: {self.loss(X_, y_)}')
                 print(f'\tStopping criteria: {stopping_criteria:.5g}')
                 print(f'\tWeight norm: {la.norm(self.coef_)}')
+                print(f'\tGrad: {la.norm(grad(self.coef_))}')
 
             if stopping_criteria < self.tol:
                 return
 
         warnings.warn(
             'The FISTA iterations did not converge to a sufficient minimum.\n'
-            f'Your subsampling rate is {self.subsampling_rate:g}, if this is '
-            'close to zero, then you cannot expect convergence.\n'
-            'Try increasing the number of iterations '
+            f'You used subsampling then this is expected, otherwise,'
+            'try to increase the number of iterations '
             'or decreasing the tolerance.',
             RuntimeWarning
         )
@@ -255,11 +205,10 @@ class GroupLassoRegressor:
             assert group1[0] < group1[1]
             assert group1[1] <= group2[0]
 
-        assert all(reg > 0 for reg in self.reg)
+        assert all(reg >= 0 for reg in self.reg)
         assert len(self.reg) == len(self.groups)
         assert self.n_iter > 0
         assert self.tol > 0
-        assert self.subsampling_rate > 0 and self.subsampling_rate <= 1
 
         if len(y.shape) != 1:
             assert y.shape[1] == 1
@@ -301,34 +250,3 @@ def get_groups_from_group_sizes(group_sizes):
     groups = (0, *np.cumsum(group_sizes))
     return list(zip(groups[:-1], groups[1:]))
 
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-
-    np.random.seed(0)
-
-    group_sizes = [np.random.randint(3, 10) for i in range(50)]
-    groups = get_groups_from_group_sizes(group_sizes)
-    num_coeffs = sum(group_sizes)
-    num_datapoints = 10000
-    noise_level = 0.5
-
-    print('Generating data')
-    X = np.random.randn(num_datapoints, num_coeffs)
-    print('Generating coefficients')
-    w = generate_group_lasso_coefficients(group_sizes, noise_level=0.05)
-
-    print('Generating targets')
-    y = X@w
-    y += np.random.randn(*y.shape)*noise_level*y
-
-    gl = GroupLassoRegressor(
-        groups=groups, n_iter=50, tol=0.1, reg=0.01, subsampling_rate=1
-    )
-    print('Starting fit')
-    gl.fit(X, y)
-
-    plt.plot(w, '.', label='True weights')
-    plt.plot(gl.coef_, '.', label='Estimated weights')
-    plt.legend()
-    plt.show()
