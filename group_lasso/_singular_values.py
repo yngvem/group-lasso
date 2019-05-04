@@ -6,7 +6,7 @@ from math import sqrt
 
 from ._subsampling import subsample, subsampling_fraction
 
-DEBUG = True
+_DEBUG = False
 LIPSCHITZ_MAXITS = 50
 LIPSCHITS_TOL = 1e-2
 
@@ -55,7 +55,7 @@ def find_largest_singular_value(
         if improvement < tol and i > 0:
             return np.sqrt(s)
 
-        if DEBUG:
+        if _DEBUG:
             print(f'Finished {i}th power iteration:\n'
                   f'\tL={sqrt(s)}\n'
                   f'\tImprovement: {improvement:03g}')
@@ -96,7 +96,7 @@ def find_smallest_singular_value(
         if improvement < tol and i > 0:
             return np.sqrt(s)
 
-        if DEBUG:
+        if _DEBUG:
             print(f'Finished {i}th power iteration:\n'
                   f'\tL={sqrt(s)}\n'
                   f'\tImprovement: {improvement:03g}')

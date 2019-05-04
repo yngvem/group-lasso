@@ -5,8 +5,8 @@ import group_lasso._group_lasso
 import numpy as np
 
 
-group_lasso._singular_values.DEBUG = True
-group_lasso._group_lasso.DEBUG = True
+group_lasso._singular_values._DEBUG = True
+group_lasso._group_lasso._DEBUG = True
 
 
 if __name__ == '__main__':

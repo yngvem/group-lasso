@@ -10,7 +10,7 @@ from ._singular_values import find_smallest_singular_value
 from ._subsampling import subsample, subsampling_fraction
 
 
-DEBUG = True
+_DEBUG = False
 
 
 def _l2_prox(w, reg):
@@ -161,7 +161,7 @@ class GroupLasso:
         v_ = u_ + du*(t-1)/t_
 
         if (v - u_).T@(u_ - u) > 0:
-            if DEBUG:
+            if _DEBUG:
                 print('Restarting')
             u_, v_, t = self._fista_it(
                 self.coef_, self.coef_, 1, L, grad, prox
@@ -194,7 +194,7 @@ class GroupLasso:
         v = self.coef_
         t = 1
 
-        if DEBUG:
+        if _DEBUG:
             X_, y_ = subsample(self.subsampling_scheme, X, y)
             print(f'Starting FISTA: ')
             print(f'\tInitial loss: {self.loss(X_, y_)}')
@@ -216,7 +216,7 @@ class GroupLasso:
 
             stopping_criteria = la.norm(du)/(la.norm(u) + 1e-10)
 
-            if DEBUG:
+            if _DEBUG:
                 X_, y_ = subsample(self.subsampling_scheme, X, y)
                 print(f'Completed the {i}th iteration:')
                 print(f'\tLoss: {self.loss(X_, y_)}')
