@@ -8,7 +8,7 @@ def generate_group_lasso_coefficients(
 ):
     coefficients = []
     for group_size in group_sizes:
-        coefficients_ = np.random.randn(group_size, 1)*included_std
+        coefficients_ = np.random.randn(group_size, 1)*coeff_std
         coefficients_ *= (np.random.uniform(0, 1) < inclusion_probability)
         coefficients.append(coefficients_)
 

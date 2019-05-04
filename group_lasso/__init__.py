@@ -1,1 +1,1 @@
-from ._group_lasso_fista import GroupLasso
+from ._group_lasso import GroupLasso
