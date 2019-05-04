@@ -61,9 +61,7 @@ class GroupLasso:
          2015 Jun 1;15(3):715-32.
     """
     # TODO: Document code
-    # TODO: Estimate smallest singular value and use improved FISTA iterations
-    # The imporved fista iterations are outlined in Faster FISTA by Schoenlieb
-    # TODO: Follow the sklearn API
+    # TODO: Use sklean mixins?
     # TODO: Tests
 
     def __init__(
