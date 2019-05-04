@@ -5,7 +5,8 @@ import warnings
 import numpy.linalg as la
 import numpy as np
 
-from .singular_values import find_largest_singular_value
+from ._singular_values import find_largest_singular_value
+from ._singular_values import find_smallest_singular_value
 from ._subsampling import subsample, subsampling_fraction
 
 
@@ -19,17 +20,21 @@ def _l2_prox(w, reg):
 
 
 def _l2_grad(A, x, b):
+    """The gradient of the problem ||Ax - b||^2 wrt x.
+    """
     return A.T@(A@x - b)
 
 
 def _subsampled_l2_grad(A, x, b, subsampling_scheme):
+    """An unbiased estimator for the gradient of ||Ax - b||^2 wrt x.
+    """
     rate = subsampling_fraction(len(A), subsampling_scheme)
     A, b = subsample(subsampling_scheme, A, b)
     return _l2_grad(A, x, b)/rate
 
 
 def _group_l2_prox(w, reg_coeffs, groups):
-    """The proximal map for the specified coefficients.
+    """The proximal map for the specified groups of coefficients.
     """
     w = w.copy()
     for (start, end), reg in zip(groups, reg_coeffs):
@@ -38,7 +43,7 @@ def _group_l2_prox(w, reg_coeffs, groups):
     return w
 
 
-class GroupLassoRegressor:
+class GroupLasso:
     """
     This class implements the Group Lasso [1] penalty for linear regression.
     The loss is optimised using the FISTA algorithm proposed in [2] with the
@@ -68,7 +73,8 @@ class GroupLassoRegressor:
         n_iter=1000,
         tol=1e-5,
         subsampling_scheme=1,
-        sqrt_subsampling=False
+        sqrt_subsampling=False,
+        use_optimal_momentum=False
     ):
         """
 
@@ -81,8 +87,8 @@ class GroupLassoRegressor:
             the next three coefficients, and so forth.
 
             The groups must be non-overlapping, thus the groups
-            [(0, 5), (3, 8)] is not possible, whereas the groups
-            [(0, 5) ,(5, 8)] is possible.
+            [(0, 5), (3, 8)] are not possible, but the groups
+            [(0, 5) ,(5, 8)] are possible.
         reg : float or iterable
             The regularisation coefficient(s). If ``reg`` is an
             iterable, then it should have the same length as
@@ -92,22 +98,43 @@ class GroupLassoRegressor:
         tol : float
             The convergence tolerance. The optimisation algorithm
             will stop once ||x_{n+1} - x_n|| < ``tol``.
-        subsampling_scheme : float
-            The subsampling rate used for the gradient computations.
-            Should be in the range (0, 1]. The gradient will be
-            computed from a random matrix of size
-            ``subsampling_scheme * len(X)``.
+        subsampling_scheme : float, int or str
+            The subsampling rate used for the gradient and singular value
+            computations. If it is a float, then it specifies the fraction
+            of rows to use in the computations. If it is an int, it 
+            specifies the number of rows to use in the computation and if
+            it is a string, then it must be 'sqrt' and the number of rows used
+            in the computations is the square root of the number of rows
+            in X.
+        use_optimal_momentum : Bool
+            Whether to use the optimal FISTA momentum as described by [1]
+            (derived in [2]). Default is False since this requires an 
+            estimate of the smallest singular value of X, which can be
+            costly.
         """
         self.groups = groups
-        self._reset_groups = False
-        self.reg = self._get_reg_vector(reg)
+        self.reg = reg
         self.n_iter = n_iter
         self.tol = tol
         self.subsampling_scheme = subsampling_scheme
+    
+    def get_params(self, deep=True):
+        return {
+            'groups': self.groups,
+            'reg': self.reg,
+            'n_iter': self.n_iter,
+            'tol': self.tol,
+            'subsampling_scheme': self.subsampling_scheme
+        }
+
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
 
     def _regularizer(self, w):
         regularizer = 0
-        for (start, end), reg in zip(self.groups, self.reg):
+        for (start, end), reg in zip(self.groups, self.reg_):
             regularizer += reg*la.norm(w[start:end, :])
         return regularizer
 
@@ -123,9 +150,13 @@ class GroupLassoRegressor:
     def loss(self, X, y):
         return self._loss(X, y, self.coef_)
 
-    def _fista_it(self, u, v, t, L, grad, prox):
+    def _fista_momentum(self, t, L, strong_convexity):
+        return 0.5 + 0.5*sqrt(1 + 4*t**2)
+
+    def _fista_it(self, u, v, t, L, grad, prox, strong_convexity=None):
         u_ = prox(v - grad(v)/L)
-        t_ = 0.5 + 0.5*sqrt(1 + 4*t**2)
+        t_ = self._fista_momentum(t, L, strong_convexity)
+
         du = u_ - u
         v_ = u_ + du*(t-1)/t_
 
@@ -157,7 +188,7 @@ class GroupLassoRegressor:
             return SSE_grad/num_rows
 
         def prox(w):
-            return _group_l2_prox(w, self.reg, self.groups)
+            return _group_l2_prox(w, self.reg_, self.groups)
 
         u = self.coef_
         v = self.coef_
@@ -167,9 +198,17 @@ class GroupLassoRegressor:
             X_, y_ = subsample(self.subsampling_scheme, X, y)
             print(f'Starting FISTA: ')
             print(f'\tInitial loss: {self.loss(X_, y_)}')
+            self._losses = []
 
         for i in range(self.n_iter):
-            u_, v, t = self._fista_it(u, v, t, lipschitz_coef, grad, prox)
+            u_, v, t = self._fista_it(
+                u,
+                v,
+                t,
+                lipschitz_coef,
+                grad,
+                prox
+            )
 
             du = u_ - u
             u = u_
@@ -184,6 +223,7 @@ class GroupLassoRegressor:
                 print(f'\tStopping criteria: {stopping_criteria:.5g}')
                 print(f'\tWeight norm: {la.norm(self.coef_)}')
                 print(f'\tGrad: {la.norm(grad(self.coef_))}')
+                self._losses.append(self.loss(X_, y_))
 
             if stopping_criteria < self.tol:
                 return
@@ -197,18 +237,15 @@ class GroupLassoRegressor:
         )
 
     def _init_fit(self, X, y):
-        if self.groups is None or self._reset_groups:
-            self._reset_groups = True
-            self.groups = [(i, i+1) for i, _ in range(X.shape[1])]
+        self.reg_ = self._get_reg_vector(self.reg)
 
+        assert all(reg >= 0 for reg in self.reg_)
+        assert len(self.reg_) == len(self.groups)
+        assert self.n_iter > 0
+        assert self.tol > 0
         for group1, group2 in zip(self.groups[:-1], self.groups[1:]):
             assert group1[0] < group1[1]
             assert group1[1] <= group2[0]
-
-        assert all(reg >= 0 for reg in self.reg)
-        assert len(self.reg) == len(self.groups)
-        assert self.n_iter > 0
-        assert self.tol > 0
 
         if len(y.shape) != 1:
             assert y.shape[1] == 1
@@ -228,25 +265,3 @@ class GroupLassoRegressor:
     def fit_predict(self, X, y):
         self.fit(X, y)
         return self.predict(X)
-
-
-def generate_group_lasso_coefficients(
-    group_sizes,
-    inclusion_probability=0.5,
-    included_std=1,
-    noise_level=0,
-):
-    coefficients = []
-    for group_size in group_sizes:
-        coefficients_ = np.random.randn(group_size, 1)*included_std
-        coefficients_ *= (np.random.uniform(0, 1) < inclusion_probability)
-        coefficients_ += np.random.randn(group_size, 1)*noise_level
-        coefficients.append(coefficients_)
-
-    return np.concatenate(coefficients, axis=0)
-
-
-def get_groups_from_group_sizes(group_sizes):
-    groups = (0, *np.cumsum(group_sizes))
-    return list(zip(groups[:-1], groups[1:]))
-
