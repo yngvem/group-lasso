@@ -171,15 +171,27 @@ class GroupLasso:
 
         return u, v, t
 
+    def _compute_lipschitz(self, X):
+        num_rows, num_cols = X.shape
+
+        SSE_lipschitz = 1.5*find_largest_singular_value(
+            X, subsampling_scheme=self.subsampling_scheme
+        )**2
+        return SSE_lipschitz/num_rows
+    
+    def _has_converged(self, weights, previous_weights):
+        weight_difference = la.norm(weights - previous_weights)
+        weight_norms = la.norm(weights + 1e-10)
+        stopping_criteria = weight_difference/weight_norms
+        return stopping_criteria < self.tol
+
     def _fista(self, X, y, lipschitz_coef=None):
         """Use the FISTA algorithm to solve the group lasso regularised loss.
         """
         num_rows, num_cols = X.shape
 
         if lipschitz_coef is None:
-            lipschitz_coef = (find_largest_singular_value(
-                X, subsampling_scheme=self.subsampling_scheme
-            )**2)*1.5/num_rows
+            lipschitz_coef = self._compute_lipschitz(X)
 
         def grad(w):
             SSE_grad = _subsampled_l2_grad(X, w, y, self.subsampling_scheme)
@@ -199,7 +211,8 @@ class GroupLasso:
             self._losses = []
 
         for i in range(self.n_iter):
-            u_, v, t = self._fista_it(
+            previous_u = u
+            u, v, t = self._fista_it(
                 u,
                 v,
                 t,
@@ -207,23 +220,18 @@ class GroupLasso:
                 grad,
                 prox
             )
-
-            du = u_ - u
-            u = u_
             self.coef_ = u
-
-            stopping_criteria = la.norm(du)/(la.norm(u) + 1e-10)
 
             if _DEBUG:
                 X_, y_ = subsample(self.subsampling_scheme, X, y)
                 print(f'Completed the {i}th iteration:')
                 print(f'\tLoss: {self.loss(X_, y_)}')
-                print(f'\tStopping criteria: {stopping_criteria:.5g}')
+                print(f'\tWeight difference: {la.norm(u-previous_u)}')
                 print(f'\tWeight norm: {la.norm(self.coef_)}')
                 print(f'\tGrad: {la.norm(grad(self.coef_))}')
                 self._losses.append(self.loss(X_, y_))
 
-            if stopping_criteria < self.tol:
+            if self._has_converged(u, previous_u) < self.tol:
                 return
 
         warnings.warn(
