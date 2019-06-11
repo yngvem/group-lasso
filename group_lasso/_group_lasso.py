@@ -98,7 +98,7 @@ class GroupLasso:
         subsampling_scheme : float, int or str
             The subsampling rate used for the gradient and singular value
             computations. If it is a float, then it specifies the fraction
-            of rows to use in the computations. If it is an int, it 
+            of rows to use in the computations. If it is an int, it
             specifies the number of rows to use in the computation and if
             it is a string, then it must be 'sqrt' and the number of rows used
             in the computations is the square root of the number of rows
@@ -107,7 +107,7 @@ class GroupLasso:
             Use the Frobenius norm to estimate the lipschitz coefficient of the
             MSE loss. If False, then subsampled power iterations are used.
             Using the Frobenius approximation for the Lipschitz coefficient
-            might fail, and end up with all-zero weights. 
+            might fail, and end up with all-zero weights.
         """
         self.groups = groups
         self.reg = reg
@@ -115,7 +115,7 @@ class GroupLasso:
         self.tol = tol
         self.subsampling_scheme = subsampling_scheme
         self.frobenius_lipchitz = frobenius_lipschitz
-    
+
     def get_params(self, deep=True):
         return {
             'groups': self.groups,
@@ -180,7 +180,7 @@ class GroupLasso:
             X, subsampling_scheme=self.subsampling_scheme
         )**2
         return SSE_lipschitz/num_rows
-    
+
     def _has_converged(self, weights, previous_weights):
         weight_difference = la.norm(weights - previous_weights)
         weight_norms = la.norm(weights + 1e-10)
@@ -250,7 +250,7 @@ class GroupLasso:
         assert all(reg >= 0 for reg in self.reg_)
         assert len(self.reg_) == len(self.groups)
         assert self.n_iter > 0
-        assert self.tol > 0
+        assert self.tol >= 0
         for group1, group2 in zip(self.groups[:-1], self.groups[1:]):
             assert group1[0] < group1[1]
             assert group1[1] <= group2[0]
