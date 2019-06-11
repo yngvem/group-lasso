@@ -6,7 +6,6 @@ import numpy.linalg as la
 import numpy as np
 
 from ._singular_values import find_largest_singular_value
-from ._singular_values import find_smallest_singular_value
 from ._subsampling import subsample, subsampling_fraction
 
 
@@ -72,7 +71,7 @@ class GroupLasso:
         tol=1e-5,
         subsampling_scheme=1,
         sqrt_subsampling=False,
-        use_optimal_momentum=False
+        frobenius_lipschitz=False,
     ):
         """
 
@@ -104,17 +103,18 @@ class GroupLasso:
             it is a string, then it must be 'sqrt' and the number of rows used
             in the computations is the square root of the number of rows
             in X.
-        use_optimal_momentum : Bool
-            Whether to use the optimal FISTA momentum as described by [1]
-            (derived in [2]). Default is False since this requires an 
-            estimate of the smallest singular value of X, which can be
-            costly.
+        frobenius_lipschitz : Bool
+            Use the Frobenius norm to estimate the lipschitz coefficient of the
+            MSE loss. If False, then subsampled power iterations are used.
+            Using the Frobenius approximation for the Lipschitz coefficient
+            might fail, and end up with all-zero weights. 
         """
         self.groups = groups
         self.reg = reg
         self.n_iter = n_iter
         self.tol = tol
         self.subsampling_scheme = subsampling_scheme
+        self.frobenius_lipchitz = frobenius_lipschitz
     
     def get_params(self, deep=True):
         return {
@@ -173,6 +173,8 @@ class GroupLasso:
 
     def _compute_lipschitz(self, X):
         num_rows, num_cols = X.shape
+        if self.frobenius_lipchitz:
+            return la.norm(X, 'fro')**2/(num_rows*num_cols)
 
         SSE_lipschitz = 1.5*find_largest_singular_value(
             X, subsampling_scheme=self.subsampling_scheme
