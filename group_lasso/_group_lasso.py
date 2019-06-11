@@ -233,7 +233,7 @@ class GroupLasso:
                 print(f'\tGrad: {la.norm(grad(self.coef_))}')
                 self._losses.append(self.loss(X_, y_))
 
-            if self._has_converged(u, previous_u) < self.tol:
+            if self._has_converged(u, previous_u):
                 return
 
         warnings.warn(
