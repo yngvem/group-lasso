@@ -7,7 +7,7 @@ import numpy.linalg as la
 import numpy as np
 
 from ._singular_values import find_largest_singular_value
-from ._subsampling import subsample, subsampling_fraction
+from ._subsampling import subsample
 from ._fista import fista
 
 
@@ -139,7 +139,7 @@ class BaseGroupLasso(ABC):
     @abstractmethod
     def _compute_lipschitz(self, X):
         pass
-    
+
     @abstractmethod
     def _grad(self, X, y, w):
         pass
@@ -147,8 +147,6 @@ class BaseGroupLasso(ABC):
     def _fista(self, X, y, lipschitz=None):
         """Use the FISTA algorithm to solve the group lasso regularised loss.
         """
-        num_rows, num_cols = X.shape
-
         if lipschitz is None:
             lipschitz = self._compute_lipschitz(X)
 
@@ -157,7 +155,7 @@ class BaseGroupLasso(ABC):
 
         def prox(w):
             return _group_l2_prox(w, self.reg_, self.groups)
-        
+
         def loss(w):
             X_, y_ = subsample(self.subsampling_scheme, X, y)
             self._loss(X_, y_, w)
@@ -234,13 +232,15 @@ class BaseGroupLasso(ABC):
     def sparsity_mask(self):
         pattern = np.zeros(len(self.coef_), dtype=bool)
         for group_start, group_end in self.groups:
-            pattern[group_start:group_end] = not np.allclose(self.coef_[group_start:group_end], 0, atol=0, rtol=1e-10)
-        
+            pattern[group_start:group_end] = not np.allclose(
+                self.coef_[group_start:group_end], 0, atol=0, rtol=1e-10
+            )
+
         return pattern
-    
+
     def transform(self, X):
         return X[:, self.sparsity_mask]
-    
+
     def fit_transform(self, X, y, lipschitz=None):
         self.fit(X, y, lipschitz)
         return self.transform(X)
