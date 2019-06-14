@@ -44,5 +44,5 @@ if __name__ == '__main__':
     plt.legend()
 
     plt.figure()
-    plt.plot(gl._losses)
+    plt.plot(gl.losses_)
     plt.show()
