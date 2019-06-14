@@ -1,6 +1,7 @@
 from math import sqrt
 from numbers import Number
 import warnings
+from abc import ABC, abstractmethod
 
 import numpy.linalg as la
 import numpy as np
@@ -35,7 +36,7 @@ def _group_l2_prox(w, reg_coeffs, groups):
     return w
 
 
-class BaseGroupLasso:
+class BaseGroupLasso(ABC):
     """
     This class implements the Group Lasso [1] regularisation for optimisation
     problems with Lipschitz continuous gradients, which is approximately
@@ -65,8 +66,6 @@ class BaseGroupLasso:
         n_iter=1000,
         tol=1e-5,
         subsampling_scheme=1,
-        sqrt_subsampling=False,
-        frobenius_lipschitz=False,
     ):
         """
 
@@ -98,18 +97,12 @@ class BaseGroupLasso:
             it is a string, then it must be 'sqrt' and the number of rows used
             in the computations is the square root of the number of rows
             in X.
-        frobenius_lipschitz : Bool
-            Use the Frobenius norm to estimate the lipschitz coefficient of the
-            MSE loss. If False, then subsampled power iterations are used.
-            Using the Frobenius approximation for the Lipschitz coefficient
-            might fail, and end up with all-zero weights.
         """
         self.groups = groups
         self.reg = reg
         self.n_iter = n_iter
         self.tol = tol
         self.subsampling_scheme = subsampling_scheme
-        self.frobenius_lipchitz = frobenius_lipschitz
 
     def get_params(self, deep=True):
         return {
@@ -136,23 +129,20 @@ class BaseGroupLasso:
             return [reg*sqrt(end - start) for start, end in self.groups]
         return reg
 
+    @abstractmethod
     def _loss(self, X, y, w):
-        X_, y_ = subsample(self.subsampling_scheme, X, y)
-        MSE = np.sum((X_@w - y_)**2)/len(X_)
-        return MSE + self._regularizer(w)
+        pass
 
     def loss(self, X, y):
         return self._loss(X, y, self.coef_)
 
+    @abstractmethod
     def _compute_lipschitz(self, X):
-        num_rows, num_cols = X.shape
-        if self.frobenius_lipchitz:
-            return la.norm(X, 'fro')**2/(num_rows*num_cols)
-
-        SSE_lipschitz = 1.5*find_largest_singular_value(
-            X, subsampling_scheme=self.subsampling_scheme
-        )**2
-        return SSE_lipschitz/num_rows
+        pass
+    
+    @abstractmethod
+    def _grad(self, X, y, w):
+        pass
 
     def _fista(self, X, y, lipschitz=None):
         """Use the FISTA algorithm to solve the group lasso regularised loss.
@@ -240,8 +230,77 @@ class BaseGroupLasso:
         self.fit(X, y)
         return self.predict(X)
 
+    @property
+    def sparsity_mask(self):
+        pattern = np.zeros(len(self.coef_), dtype=bool)
+        for group_start, group_end in self.groups:
+            pattern[group_start:group_end] = not np.allclose(self.coef_[group_start:group_end], 0, atol=0, rtol=1e-10)
+        
+        return pattern
+    
+    def transform(self, X):
+        return X[:, self.sparsity_mask]
+    
+    def fit_transform(self, X, y, lipschitz=None):
+        self.fit(X, y, lipschitz)
+        return self.transform(X)
+
 
 class GroupLasso(BaseGroupLasso):
+    def __init__(
+        self,
+        groups=None,
+        reg=0.05,
+        n_iter=1000,
+        tol=1e-5,
+        subsampling_scheme=1,
+        frobenius_lipschitz=False,
+    ):
+        """
+
+        Arguments
+        ---------
+        groups : list of tuples
+            List of groups parametrised by indices. The group
+            (0, 5) denotes the group of the first five regression
+            coefficients. The group (5, 8) denotes the group of
+            the next three coefficients, and so forth.
+
+            The groups must be non-overlapping, thus the groups
+            [(0, 5), (3, 8)] are not possible, but the groups
+            [(0, 5) ,(5, 8)] are possible.
+        reg : float or iterable
+            The regularisation coefficient(s). If ``reg`` is an
+            iterable, then it should have the same length as
+            ``groups``.
+        n_iter : int
+            The maximum number of iterations to perform
+        tol : float
+            The convergence tolerance. The optimisation algorithm
+            will stop once ||x_{n+1} - x_n|| < ``tol``.
+        subsampling_scheme : float, int or str
+            The subsampling rate used for the gradient and singular value
+            computations. If it is a float, then it specifies the fraction
+            of rows to use in the computations. If it is an int, it
+            specifies the number of rows to use in the computation and if
+            it is a string, then it must be 'sqrt' and the number of rows used
+            in the computations is the square root of the number of rows
+            in X.
+        frobenius_lipschitz : Bool
+            Use the Frobenius norm to estimate the lipschitz coefficient of the
+            MSE loss. If False, then subsampled power iterations are used.
+            Using the Frobenius approximation for the Lipschitz coefficient
+            might fail, and end up with all-zero weights.
+        """
+        super().__init__(
+            groups=groups,
+            reg=reg,
+            n_iter=n_iter,
+            tol=tol,
+            subsampling_scheme=subsampling_scheme
+        )
+        self.frobenius_lipchitz = frobenius_lipschitz
+
     def _loss(self, X, y, w):
         X_, y_ = subsample(self.subsampling_scheme, X, y)
         MSE = np.sum((X_@w - y_)**2)/len(X_)
@@ -251,3 +310,13 @@ class GroupLasso(BaseGroupLasso):
         X_, y_ = subsample(self.subsampling_scheme, X, y)
         SSE_grad = _l2_grad(X_, y_, w)
         return SSE_grad/len(X_)
+
+    def _compute_lipschitz(self, X):
+        num_rows, num_cols = X.shape
+        if self.frobenius_lipchitz:
+            return la.norm(X, 'fro')**2/(num_rows*num_cols)
+
+        SSE_lipschitz = 1.5*find_largest_singular_value(
+            X, subsampling_scheme=self.subsampling_scheme
+        )**2
+        return SSE_lipschitz/num_rows

@@ -34,7 +34,7 @@ if __name__ == '__main__':
     y += np.random.randn(*y.shape)*noise_level*y
 
     gl = GroupLasso(
-        groups=groups, n_iter=50, tol=1e-8, reg=0.07, frobenius_lipschitz=True, subsampling_scheme=0.05
+        groups=groups, n_iter=10, tol=1e-8, reg=0.07, frobenius_lipschitz=True, subsampling_scheme=0.05
     )
     print('Starting fit')
     gl.fit(X, y)
@@ -45,4 +45,7 @@ if __name__ == '__main__':
 
     plt.figure()
     plt.plot(gl.losses_)
+    
+    print(f'X shape: {X.shape}')
+    print(f'Transformed X shape: {gl.transform(X).shape}')
     plt.show()
