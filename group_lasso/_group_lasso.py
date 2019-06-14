@@ -19,18 +19,10 @@ def _l2_prox(w, reg):
     return max(0, 1 - reg/la.norm(w))*w
 
 
-def _l2_grad(A, x, b):
+def _l2_grad(A, b, x):
     """The gradient of the problem ||Ax - b||^2 wrt x.
     """
     return A.T@(A@x - b)
-
-
-def _subsampled_l2_grad(A, x, b, subsampling_scheme):
-    """An unbiased estimator for the gradient of ||Ax - b||^2 wrt x.
-    """
-    rate = subsampling_fraction(len(A), subsampling_scheme)
-    A, b = subsample(subsampling_scheme, A, b)
-    return _l2_grad(A, x, b)/rate
 
 
 def _group_l2_prox(w, reg_coeffs, groups):
@@ -43,12 +35,14 @@ def _group_l2_prox(w, reg_coeffs, groups):
     return w
 
 
-class GroupLasso:
+class BaseGroupLasso:
     """
-    This class implements the Group Lasso [1] penalty for linear regression.
+    This class implements the Group Lasso [1] regularisation for optimisation
+    problems with Lipschitz continuous gradients, which is approximately
+    equivalent to having a bounded third derivative.
+
     The loss is optimised using the FISTA algorithm proposed in [2] with the
     generalised gradient-based restarting scheme proposed in [3].
-
 
     [1]: Yuan M, Lin Y. Model selection and estimation in regression with
          grouped variables. Journal of the Royal Statistical Society: Series B
@@ -143,7 +137,8 @@ class GroupLasso:
         return reg
 
     def _loss(self, X, y, w):
-        MSE = np.sum((X@w - y)**2)/len(X)
+        X_, y_ = subsample(self.subsampling_scheme, X, y)
+        MSE = np.sum((X_@w - y_)**2)/len(X_)
         return MSE + self._regularizer(w)
 
     def loss(self, X, y):
@@ -168,8 +163,7 @@ class GroupLasso:
             lipschitz = self._compute_lipschitz(X)
 
         def grad(w):
-            SSE_grad = _subsampled_l2_grad(X, w, y, self.subsampling_scheme)
-            return SSE_grad/num_rows
+            return self._grad(X, y, w)
 
         def prox(w):
             return _group_l2_prox(w, self.reg_, self.groups)
@@ -245,3 +239,15 @@ class GroupLasso:
     def fit_predict(self, X, y):
         self.fit(X, y)
         return self.predict(X)
+
+
+class GroupLasso(BaseGroupLasso):
+    def _loss(self, X, y, w):
+        X_, y_ = subsample(self.subsampling_scheme, X, y)
+        MSE = np.sum((X_@w - y_)**2)/len(X_)
+        return MSE + self._regularizer(w)
+
+    def _grad(self, X, y, w):
+        X_, y_ = subsample(self.subsampling_scheme, X, y)
+        SSE_grad = _l2_grad(X_, y_, w)
+        return SSE_grad/len(X_)
