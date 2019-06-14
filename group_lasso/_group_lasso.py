@@ -7,6 +7,7 @@ import numpy as np
 
 from ._singular_values import find_largest_singular_value
 from ._subsampling import subsample, subsampling_fraction
+from ._fista import fista
 
 
 _DEBUG = False
@@ -148,29 +149,6 @@ class GroupLasso:
     def loss(self, X, y):
         return self._loss(X, y, self.coef_)
 
-    def _fista_momentum(self, t):
-        return 0.5 + 0.5*sqrt(1 + 4*t**2)
-
-    def _fista_it(self, u, v, t, lipschitz, grad, prox):
-        u_ = prox(v - grad(v)/lipschitz)
-        t_ = self._fista_momentum(t)
-
-        du = u_ - u
-        v_ = u_ + du*(t-1)/t_
-
-        if (v - u_).T@(u_ - u) > 0:
-            if _DEBUG:
-                print('Restarting')
-            u_, v_, t = self._fista_it(
-                self.coef_, self.coef_, 1, lipschitz, grad, prox
-            )
-
-        u = u_
-        t = t_
-        v = v_
-
-        return u, v, t
-
     def _compute_lipschitz(self, X):
         num_rows, num_cols = X.shape
         if self.frobenius_lipchitz:
@@ -181,19 +159,13 @@ class GroupLasso:
         )**2
         return SSE_lipschitz/num_rows
 
-    def _has_converged(self, weights, previous_weights):
-        weight_difference = la.norm(weights - previous_weights)
-        weight_norms = la.norm(weights + 1e-10)
-        stopping_criteria = weight_difference/weight_norms
-        return stopping_criteria < self.tol
-
-    def _fista(self, X, y, lipschitz_coef=None):
+    def _fista(self, X, y, lipschitz=None):
         """Use the FISTA algorithm to solve the group lasso regularised loss.
         """
         num_rows, num_cols = X.shape
 
-        if lipschitz_coef is None:
-            lipschitz_coef = self._compute_lipschitz(X)
+        if lipschitz is None:
+            lipschitz = self._compute_lipschitz(X)
 
         def grad(w):
             SSE_grad = _subsampled_l2_grad(X, w, y, self.subsampling_scheme)
@@ -201,40 +173,39 @@ class GroupLasso:
 
         def prox(w):
             return _group_l2_prox(w, self.reg_, self.groups)
-
-        u = self.coef_
-        v = self.coef_
-        t = 1
-
-        if _DEBUG:
+        
+        def loss(w):
             X_, y_ = subsample(self.subsampling_scheme, X, y)
-            print(f'Starting FISTA: ')
-            print(f'\tInitial loss: {self.loss(X_, y_)}')
-            self._losses = []
+            self._loss(X_, y_, w)
 
-        for i in range(self.n_iter):
-            previous_u = u
-            u, v, t = self._fista_it(
-                u,
-                v,
-                t,
-                lipschitz_coef,
-                grad,
-                prox
-            )
-            self.coef_ = u
+        def callback(x, it_num, previous_x=None):
+            X_, y_ = subsample(self.subsampling_scheme, X, y)
+            w = x
+            previous_w = previous_x
 
-            if _DEBUG:
-                X_, y_ = subsample(self.subsampling_scheme, X, y)
-                print(f'Completed the {i}th iteration:')
-                print(f'\tLoss: {self.loss(X_, y_)}')
-                print(f'\tWeight difference: {la.norm(u-previous_u)}')
-                print(f'\tWeight norm: {la.norm(self.coef_)}')
-                print(f'\tGrad: {la.norm(grad(self.coef_))}')
-                self._losses.append(self.loss(X_, y_))
+            self.losses_.append(self._loss(X_, y_, w))
 
-            if self._has_converged(u, previous_u):
-                return
+            if previous_w is None and _DEBUG:
+                print(f'Starting FISTA: ')
+                print(f'\tInitial loss: {self._loss(X_, y_, w)}')
+
+            elif _DEBUG:
+                print(f'Completed iteration {it_num}:')
+                print(f'\tLoss: {self._loss(X_, y_, w)}')
+                print(f'\tWeight difference: {la.norm(w-previous_w)}')
+                print(f'\tWeight norm: {la.norm(w)}')
+                print(f'\tGrad: {la.norm(grad(w))}')
+
+        self.coef_ = fista(
+            self.coef_,
+            grad=grad,
+            prox=prox,
+            loss=loss,
+            lipschitz=lipschitz,
+            n_iter=self.n_iter,
+            tol=self.tol,
+            callback=callback
+        )
 
         warnings.warn(
             'The FISTA iterations did not converge to a sufficient minimum.\n'
@@ -244,9 +215,7 @@ class GroupLasso:
             RuntimeWarning
         )
 
-    def _init_fit(self, X, y):
-        self.reg_ = self._get_reg_vector(self.reg)
-
+    def _check_valid_parameters(self, X, y):
         assert all(reg >= 0 for reg in self.reg_)
         assert len(self.reg_) == len(self.groups)
         assert self.n_iter > 0
@@ -260,12 +229,15 @@ class GroupLasso:
         else:
             y = y.reshape(-1, 1)
 
+    def _init_fit(self, X, y):
+        self.reg_ = self._get_reg_vector(self.reg)
+        self.losses_ = []
         self.coef_ = np.random.randn(X.shape[1], 1)
         self.coef_ /= la.norm(self.coef_)
 
-    def fit(self, X, y, lipschitz_coef=None):
+    def fit(self, X, y, lipschitz=None):
         self._init_fit(X, y)
-        self._fista(X, y, lipschitz_coef=lipschitz_coef)
+        self._fista(X, y, lipschitz=lipschitz)
 
     def predict(self, X):
         return X@self.coef_
