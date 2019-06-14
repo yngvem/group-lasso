@@ -148,12 +148,12 @@ class GroupLasso:
     def loss(self, X, y):
         return self._loss(X, y, self.coef_)
 
-    def _fista_momentum(self, t, L, strong_convexity):
+    def _fista_momentum(self, t):
         return 0.5 + 0.5*sqrt(1 + 4*t**2)
 
-    def _fista_it(self, u, v, t, L, grad, prox, strong_convexity=None):
-        u_ = prox(v - grad(v)/L)
-        t_ = self._fista_momentum(t, L, strong_convexity)
+    def _fista_it(self, u, v, t, lipschitz, grad, prox):
+        u_ = prox(v - grad(v)/lipschitz)
+        t_ = self._fista_momentum(t)
 
         du = u_ - u
         v_ = u_ + du*(t-1)/t_
@@ -162,7 +162,7 @@ class GroupLasso:
             if _DEBUG:
                 print('Restarting')
             u_, v_, t = self._fista_it(
-                self.coef_, self.coef_, 1, L, grad, prox
+                self.coef_, self.coef_, 1, lipschitz, grad, prox
             )
 
         u = u_
