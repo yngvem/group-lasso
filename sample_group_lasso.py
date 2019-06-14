@@ -1,5 +1,7 @@
 from group_lasso import GroupLasso
-from group_lasso._utils import get_groups_from_group_sizes, generate_group_lasso_coefficients
+from group_lasso._utils import (
+    get_groups_from_group_sizes, generate_group_lasso_coefficients
+)
 import group_lasso._singular_values
 import group_lasso._group_lasso
 import numpy as np
@@ -14,7 +16,7 @@ if __name__ == '__main__':
 
     np.random.seed(0)
 
-    group_sizes = [np.random.randint(3, 10) for i in range(50)]
+    group_sizes = [np.random.randint(5, 15) for i in range(50)]
     groups = get_groups_from_group_sizes(group_sizes)
     num_coeffs = sum(group_sizes)
     num_datapoints = 100_000
@@ -32,7 +34,7 @@ if __name__ == '__main__':
     y += np.random.randn(*y.shape)*noise_level*y
 
     gl = GroupLasso(
-        groups=groups, n_iter=50, tol=1e-16, reg=0.1, subsampling_scheme=0.1,
+        groups=groups, n_iter=50, tol=1e-8, reg=0.07, frobenius_lipschitz=True, subsampling_scheme=0.05
     )
     print('Starting fit')
     gl.fit(X, y)
