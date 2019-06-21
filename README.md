@@ -30,6 +30,8 @@ The todos are, in decreasing order of importance
  4. Write more docstrings
  5. Improve API
     - Groups should really be provided as boolean masks, not the tuple structure currently used 
+ 6. Better ScikitLearn compatibility
+    - Use Mixins?
  6. Multiple regression
  7. Classification problems (I have an experimental implementation, but it's not tested yet)
 
