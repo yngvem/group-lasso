@@ -244,6 +244,9 @@ class BaseGroupLasso(ABC):
     def fit_transform(self, X, y, lipschitz=None):
         self.fit(X, y, lipschitz)
         return self.transform(X)
+    
+    def subsample(self, *args):
+        return subsample(self.subsampling_scheme, *args)
 
 
 class GroupLasso(BaseGroupLasso):
@@ -303,12 +306,12 @@ class GroupLasso(BaseGroupLasso):
         self.frobenius_lipchitz = frobenius_lipschitz
 
     def _loss(self, X, y, w):
-        X_, y_ = subsample(self.subsampling_scheme, X, y)
+        X_, y_ = self.subsample(X, y)
         MSE = np.sum((X_@w - y_)**2)/len(X_)
         return MSE + self._regularizer(w)
 
     def _grad(self, X, y, w):
-        X_, y_ = subsample(self.subsampling_scheme, X, y)
+        X_, y_ = self.subsample(X, y)
         SSE_grad = _l2_grad(X_, y_, w)
         return SSE_grad/len(X_)
 
