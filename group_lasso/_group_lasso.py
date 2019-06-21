@@ -220,9 +220,10 @@ class BaseGroupLasso(ABC):
     def fit(self, X, y, lipschitz=None):
         self._init_fit(X, y)
         self._minimise_loss(X, y, lipschitz=lipschitz)
-
+    
+    @abstractmethod
     def predict(self, X):
-        return X@self.coef_
+        pass
 
     def fit_predict(self, X, y):
         self.fit(X, y)
@@ -304,6 +305,9 @@ class GroupLasso(BaseGroupLasso):
             subsampling_scheme=subsampling_scheme
         )
         self.frobenius_lipchitz = frobenius_lipschitz
+
+    def predict(self, X):
+        return X@self.coef_
 
     def _loss(self, X, y, w):
         X_, y_ = self.subsample(X, y)
