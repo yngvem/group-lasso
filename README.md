@@ -16,20 +16,20 @@ we will get a sparse set of sensors.
 The todos are, in decreasing order of importance
 
  1. Write a better readme
-   - Code examples
-   - Installation guide (after point 2.)
-   - Better description of Group LASSO
+    - Code examples
+    - Installation guide (after point 2.)
+    - Better description of Group LASSO
  2. Make easy to install
-   - Create setup.py
-   - Create wheels
-   - Upload to PyPI
+    - Create setup.py
+    - Create wheels
+    - Upload to PyPI
  3. Write tests
-   - Unregularised vs sklearn
-   - Test for the singular value computations
-   - Brute force tests for Lipschitz coefficients
+    - Unregularised vs sklearn
+    - Test for the singular value computations
+    - Brute force tests for Lipschitz coefficients
  4. Write more docstrings
  5. Improve API
-   - Groups should really be provided as boolean masks, not the tuple structure currently used
+    - Groups should really be provided as boolean masks, not the tuple structure currently used 
  6. Multiple regression
  7. Classification problems (I have an experimental implementation, but it's not tested yet)
 
