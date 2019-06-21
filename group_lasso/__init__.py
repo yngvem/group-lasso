@@ -1,1 +1,1 @@
-from ._group_lasso import GroupLasso
+from ._group_lasso import GroupLasso, LogisticGroupLasso

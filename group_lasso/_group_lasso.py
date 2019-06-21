@@ -128,10 +128,13 @@ class BaseGroupLasso(ABC):
         if isinstance(reg, Number):
             return [reg*sqrt(end - start) for start, end in self.groups]
         return reg
-
+    
     @abstractmethod
-    def _loss(self, X, y, w):
+    def _unregularised_loss(self, X, y, w):
         pass
+
+    def _loss(self, X, y, w):
+        return self._unregularised_loss(X, y, w) + self._regularizer(w)
 
     def loss(self, X, y):
         return self._loss(X, y, self.coef_)
@@ -309,7 +312,7 @@ class GroupLasso(BaseGroupLasso):
     def predict(self, X):
         return X@self.coef_
 
-    def _loss(self, X, y, w):
+    def _unregularised_loss(self, X, y, w):
         X_, y_ = self.subsample(X, y)
         MSE = np.sum((X_@w - y_)**2)/len(X_)
         return MSE + self._regularizer(w)
@@ -328,3 +331,41 @@ class GroupLasso(BaseGroupLasso):
             X, subsampling_scheme=self.subsampling_scheme
         )**2
         return SSE_lipschitz/num_rows
+
+
+def _sigmoid(x):
+    return 1/(1 + np.exp(-x))
+
+
+def _logistic_proba(X, w):
+    return _sigmoid(X@w)
+
+
+def _logistic_cross_entropy(X, y, w):
+    p = _logistic_proba(X, w)
+    return -(y*np.log(p) + (1-y)*np.log(1-p))
+
+
+class LogisticGroupLasso(BaseGroupLasso):
+    """WARNING: Experimental.
+    """
+    def _compute_proba(self, X, w):
+        return _sigmoid(X@w)
+
+    def _unregularised_loss(self, X, y, w):
+        X_, y_ = self.subsample(X, y)
+        return _logistic_cross_entropy(X_, y_, w).sum()/len(X)
+    
+    def _grad(self, X, y, w):
+        X_, y_ = self.subsample(X, y)
+        p = _logistic_proba(X_, w)
+        return X_.T@(p-y)/len(X_)
+    
+    def _compute_lipschitz(self, X):
+        return np.sqrt(12)*np.linalg.norm(X, 'fro')/len(X)
+    
+    def predict_proba(self, X):
+        return _logistic_proba(X, self.coef_)
+
+    def predict(self, X):
+        return self.predict_proba(X) >= 0.5
