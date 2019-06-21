@@ -144,7 +144,7 @@ class BaseGroupLasso(ABC):
     def _grad(self, X, y, w):
         pass
 
-    def _fista(self, X, y, lipschitz=None):
+    def _minimise_loss(self, X, y, lipschitz=None):
         """Use the FISTA algorithm to solve the group lasso regularised loss.
         """
         if lipschitz is None:
@@ -219,7 +219,7 @@ class BaseGroupLasso(ABC):
 
     def fit(self, X, y, lipschitz=None):
         self._init_fit(X, y)
-        self._fista(X, y, lipschitz=lipschitz)
+        self._minimise_loss(X, y, lipschitz=lipschitz)
 
     def predict(self, X):
         return X@self.coef_
@@ -286,9 +286,10 @@ class GroupLasso(BaseGroupLasso):
             it is a string, then it must be 'sqrt' and the number of rows used
             in the computations is the square root of the number of rows
             in X.
-        frobenius_lipschitz : Bool
+        frobenius_lipschitz : Bool [default=False]
             Use the Frobenius norm to estimate the lipschitz coefficient of the
-            MSE loss. If False, then subsampled power iterations are used.
+            MSE loss. This works well for systems whose power iterations converge
+            slowly. If False, then subsampled power iterations are used.
             Using the Frobenius approximation for the Lipschitz coefficient
             might fail, and end up with all-zero weights.
         """
