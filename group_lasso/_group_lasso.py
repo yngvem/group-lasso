@@ -359,7 +359,7 @@ class LogisticGroupLasso(BaseGroupLasso):
     def _grad(self, X, y, w):
         X_, y_ = self.subsample(X, y)
         p = _logistic_proba(X_, w)
-        return X_.T@(p-y)/len(X_)
+        return X_.T@(p-y_)/len(X_)
     
     def _compute_lipschitz(self, X):
         return np.sqrt(12)*np.linalg.norm(X, 'fro')/len(X)
