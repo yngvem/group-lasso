@@ -7,8 +7,8 @@ from math import sqrt
 from ._subsampling import subsample, subsampling_fraction
 
 _DEBUG = False
-LIPSCHITZ_MAXITS = 50
-LIPSCHITS_TOL = 1e-2
+LIPSCHITZ_MAXITS = 20
+LIPSCHITS_TOL = 5e-3
 
 
 def _power_iteration(X, v):
