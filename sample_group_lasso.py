@@ -54,6 +54,11 @@ if __name__ == "__main__":
     plt.figure()
     plt.plot(gl.losses_)
 
+    plt.figure()
+    plt.scatter(w, gl.coef_, s=10)
+    plt.ylabel('Learned coefficients')
+    plt.xlabel('True coefficients')
+
     print(f"X shape: {X.shape}")
     print(f"Transformed X shape: {gl.transform(X).shape}")
     plt.show()

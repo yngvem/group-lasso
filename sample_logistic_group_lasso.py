@@ -20,7 +20,7 @@ if __name__ == "__main__":
     group_sizes = [np.random.randint(5, 15) for i in range(50)]
     groups = get_groups_from_group_sizes(group_sizes)
     num_coeffs = sum(group_sizes)
-    num_datapoints = 10_000
+    num_datapoints = 100_000
     noise_level = 1
     coeff_noise_level = 0.05
 
@@ -41,8 +41,8 @@ if __name__ == "__main__":
         groups=groups,
         n_iter=10,
         tol=1e-8,
-        reg=5e-3,
-        subsampling_scheme=1,
+        reg=1e-2,
+        subsampling_scheme=0.1,
         fit_intercept=True,
     )
     print("Starting fit")
@@ -63,6 +63,11 @@ if __name__ == "__main__":
 
     plt.figure()
     plt.plot(gl.losses_)
+
+    plt.figure()
+    plt.scatter(w, gl.coef_, s=10)
+    plt.ylabel('Learned coefficients')
+    plt.xlabel('True coefficients')
 
     print(f"X shape: {X.shape}")
     print(f"Transformed X shape: {gl.transform(X).shape}")
