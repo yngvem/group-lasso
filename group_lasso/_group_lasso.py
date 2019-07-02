@@ -242,9 +242,7 @@ class BaseGroupLasso(ABC):
 
     def _init_fit(self, X, y):
         groups = np.array([-1 if i is None else i for i in self.groups])
-        self.groups_ = [
-            self.groups == u for u in np.unique(groups) if u >= 0
-        ]
+        self.groups_ = [self.groups == u for u in np.unique(groups) if u >= 0]
         self.reg_ = self._get_reg_vector(self.reg)
         self.losses_ = []
         self.coef_ = np.random.randn(X.shape[1], 1)
@@ -319,6 +317,7 @@ class GroupLasso(BaseGroupLasso):
          schemes. Foundations of computational mathematics.
          2015 Jun 1;15(3):715-32.
     """
+
     def __init__(
         self,
         groups=None,
@@ -381,7 +380,7 @@ class GroupLasso(BaseGroupLasso):
 
     def _unregularised_loss(self, X, y, w):
         X_, y_ = self.subsample(X, y)
-        MSE = 0.5*np.sum((X_ @ w - y_) ** 2) / len(X_)
+        MSE = 0.5 * np.sum((X_ @ w - y_) ** 2) / len(X_)
         return MSE
 
     def _grad(self, X, y, w):
