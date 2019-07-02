@@ -25,9 +25,9 @@ def _group_l2_prox(w, reg_coeffs, groups):
     """
     w = w.copy()
 
-    for (start, end), reg in zip(groups, reg_coeffs):
-        reg = reg * sqrt(end - start)
-        w[start:end, :] = _l2_prox(w[start:end, :], reg)
+    for group, reg in zip(groups, reg_coeffs):
+        reg = reg * sqrt(group.sum())
+        w[group] = _l2_prox(w[group], reg)
 
     return w
 
@@ -82,15 +82,14 @@ class BaseGroupLasso(ABC):
 
         Arguments
         ---------
-        groups : list of tuples
-            List of groups parametrised by indices. The group
-            (0, 5) denotes the group of the first five regression
-            coefficients. The group (5, 8) denotes the group of
-            the next three coefficients, and so forth.
-
-            The groups must be non-overlapping, thus the groups
-            [(0, 5), (3, 8)] are not possible, but the groups
-            [(0, 5) ,(5, 8)] are possible.
+        groups : Iterable
+            Iterable that specifies which group each column corresponds to.
+            For columns that should not be regularised, the corresponding
+            group index should either be None or negative. For example, the
+            list ``[1, 1, 1, 2, 2, -1]`` specifies that the first three
+            columns of the data matrix belong to the first group, the next
+            two columns belong to the second group and the last column should
+            not be regularised.
         reg : float or iterable
             The regularisation coefficient(s). If ``reg`` is an
             iterable, then it should have the same length as
@@ -134,13 +133,13 @@ class BaseGroupLasso(ABC):
     def _regularizer(self, w):
         regularizer = 0
         b, w = _split_intercept(w)
-        for (start, end), reg in zip(self.groups, self.reg_):
-            regularizer += reg * la.norm(w[start:end, :])
+        for group, reg in zip(self.groups_, self.reg_):
+            regularizer += reg * la.norm(w[group, :])
         return regularizer
 
     def _get_reg_vector(self, reg):
         if isinstance(reg, Number):
-            return [reg * sqrt(end - start) for start, end in self.groups]
+            return [reg * sqrt(group.sum()) for group in self.groups_]
         return reg
 
     @abstractmethod
@@ -181,7 +180,7 @@ class BaseGroupLasso(ABC):
 
         def prox(w):
             b, w_ = _split_intercept(w)
-            w_ = _group_l2_prox(w_, self.reg_, self.groups)
+            w_ = _group_l2_prox(w_, self.reg_, self.groups_)
             return _join_intercept(b, w_)
 
         def loss(w):
@@ -242,6 +241,10 @@ class BaseGroupLasso(ABC):
             y = y.reshape(-1, 1)
 
     def _init_fit(self, X, y):
+        groups = np.array([-1 if i is None else i for i in self.groups])
+        self.groups_ = [
+            self.groups == u for u in np.unique(groups) if u >= 0
+        ]
         self.reg_ = self._get_reg_vector(self.reg)
         self.losses_ = []
         self.coef_ = np.random.randn(X.shape[1], 1)
@@ -263,9 +266,9 @@ class BaseGroupLasso(ABC):
     @property
     def sparsity_mask(self):
         pattern = np.zeros(len(self.coef_), dtype=bool)
-        for group_start, group_end in self.groups:
-            pattern[group_start:group_end] = not np.allclose(
-                self.coef_[group_start:group_end], 0, atol=0, rtol=1e-10
+        for group in self.groups_:
+            pattern[group] = not np.allclose(
+                self.coef_[group], 0, atol=0, rtol=1e-10
             )
 
         return pattern
@@ -330,15 +333,14 @@ class GroupLasso(BaseGroupLasso):
 
         Arguments
         ---------
-        groups : list of tuples
-            List of groups parametrised by indices. The group
-            (0, 5) denotes the group of the first five regression
-            coefficients. The group (5, 8) denotes the group of
-            the next three coefficients, and so forth.
-
-            The groups must be non-overlapping, thus the groups
-            [(0, 5), (3, 8)] are not possible, but the groups
-            [(0, 5) ,(5, 8)] are possible.
+        groups : Iterable
+            Iterable that specifies which group each column corresponds to.
+            For columns that should not be regularised, the corresponding
+            group index should either be None or negative. For example, the
+            list ``[1, 1, 1, 2, 2, -1]`` specifies that the first three
+            columns of the data matrix belong to the first group, the next
+            two columns belong to the second group and the last column should
+            not be regularised.
         reg : float or iterable
             The regularisation coefficient(s). If ``reg`` is an
             iterable, then it should have the same length as
