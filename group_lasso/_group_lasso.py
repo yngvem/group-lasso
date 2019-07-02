@@ -288,6 +288,34 @@ def _l2_grad(A, b, x):
 
 
 class GroupLasso(BaseGroupLasso):
+    """
+    This class implements the Group Lasso [1] regularisation for linear
+    regression with the mean squared penalty.
+
+    This class is implemented as both a regressor and a transformation.
+    If the ``transform`` method is called, then the columns of the input
+    that correspond to zero-valued regression coefficients are dropped.
+
+    The loss is optimised using the FISTA algorithm proposed in [2] with the
+    generalised gradient-based restarting scheme proposed in [3]. This
+    algorithm is not as accurate as a few other optimisation algorithms,
+    but it is extremely efficient and does recover the sparsity patterns.
+    We therefore reccomend that this class is used as a transformer to select
+    the viable features and that the output is fed into another regression
+    algorithm, such as RidgeRegression in scikit-learn.
+
+    References
+    ----------
+    [1]: Yuan M, Lin Y. Model selection and estimation in regression with
+         grouped variables. Journal of the Royal Statistical Society: Series B
+         (Statistical Methodology). 2006 Feb;68(1):49-67.
+    [2]: Beck A, Teboulle M. A fast iterative shrinkage-thresholding algorithm
+         for linear inverse problems. SIAM journal on imaging sciences.
+         2009 Mar 4;2(1):183-202.
+    [3]: O’donoghue B, Candes E. Adaptive restart for accelerated gradient
+         schemes. Foundations of computational mathematics.
+         2015 Jun 1;15(3):715-32.
+    """
     def __init__(
         self,
         groups=None,
