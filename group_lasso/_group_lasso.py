@@ -216,7 +216,7 @@ class BaseGroupLasso(ABC):
             tol=self.tol,
             callback=callback,
         )
-        self.intercept, self.coef_ = _split_intercept(weights)
+        self.intercept_, self.coef_ = _split_intercept(weights)
 
         warnings.warn(
             "The FISTA iterations did not converge to a sufficient minimum.\n"
