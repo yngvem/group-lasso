@@ -11,17 +11,17 @@ def _random_row_idxes(num_rows, subsampling_scheme):
     if subsampling_scheme == 1:
         return range(num_rows)
     elif (
-        isinstance(subsampling_scheme, str) and
-        subsampling_scheme.lower() == 'sqrt'
+        isinstance(subsampling_scheme, str)
+        and subsampling_scheme.lower() == "sqrt"
     ):
         num_subsampled_rows = int(np.sqrt(num_rows))
     elif subsampling_scheme < 1:
-        num_subsampled_rows = int(num_rows*subsampling_scheme)
+        num_subsampled_rows = int(num_rows * subsampling_scheme)
     elif subsampling_scheme > 1 and isinstance(subsampling_scheme, int):
         assert subsampling_scheme < num_rows
         num_subsampled_rows = subsampling_scheme
     else:
-        raise ValueError('Not valid subsampling scheme')
+        raise ValueError("Not valid subsampling scheme")
 
     inds = np.random.choice(num_rows, num_subsampled_rows, replace=False)
     inds.sort()
@@ -29,7 +29,7 @@ def _random_row_idxes(num_rows, subsampling_scheme):
 
 
 def subsampling_fraction(num_rows, subsampling_scheme):
-    return len(_random_row_idxes(num_rows, subsampling_scheme))/num_rows
+    return len(_random_row_idxes(num_rows, subsampling_scheme)) / num_rows
 
 
 def subsample(subsampling_scheme, *Xs):

@@ -17,23 +17,32 @@ _DEBUG = False
 def _l2_prox(w, reg):
     """The proximal operator for reg*||w||_2 (not squared).
     """
-    return max(0, 1 - reg/la.norm(w))*w
-
-
-def _l2_grad(A, b, x):
-    """The gradient of the problem ||Ax - b||^2 wrt x.
-    """
-    return A.T@(A@x - b)
+    return max(0, 1 - reg / la.norm(w)) * w
 
 
 def _group_l2_prox(w, reg_coeffs, groups):
     """The proximal map for the specified groups of coefficients.
     """
     w = w.copy()
+
     for (start, end), reg in zip(groups, reg_coeffs):
-        reg = reg*sqrt(end - start)
+        reg = reg * sqrt(end - start)
         w[start:end, :] = _l2_prox(w[start:end, :], reg)
+
     return w
+
+
+def _split_intercept(w):
+    return w[0], w[1:]
+
+
+def _join_intercept(b, w):
+    return np.concatenate([np.array(b).reshape(1, 1), w], axis=0)
+
+
+def _add_intercept_col(X):
+    ones = np.ones([X.shape[0], 1])
+    return np.concatenate([ones, X], axis=1)
 
 
 class BaseGroupLasso(ABC):
@@ -55,6 +64,7 @@ class BaseGroupLasso(ABC):
          schemes. Foundations of computational mathematics.
          2015 Jun 1;15(3):715-32.
     """
+
     # TODO: Document code
     # TODO: Use sklean mixins?
     # TODO: Tests
@@ -66,6 +76,7 @@ class BaseGroupLasso(ABC):
         n_iter=1000,
         tol=1e-5,
         subsampling_scheme=1,
+        fit_intercept=True,
     ):
         """
 
@@ -97,20 +108,22 @@ class BaseGroupLasso(ABC):
             it is a string, then it must be 'sqrt' and the number of rows used
             in the computations is the square root of the number of rows
             in X.
+        fit_intercept : bool (default=True)
         """
         self.groups = groups
         self.reg = reg
         self.n_iter = n_iter
         self.tol = tol
         self.subsampling_scheme = subsampling_scheme
+        self.fit_intercept = fit_intercept
 
     def get_params(self, deep=True):
         return {
-            'groups': self.groups,
-            'reg': self.reg,
-            'n_iter': self.n_iter,
-            'tol': self.tol,
-            'subsampling_scheme': self.subsampling_scheme
+            "groups": self.groups,
+            "reg": self.reg,
+            "n_iter": self.n_iter,
+            "tol": self.tol,
+            "subsampling_scheme": self.subsampling_scheme,
         }
 
     def set_params(self, **parameters):
@@ -120,15 +133,16 @@ class BaseGroupLasso(ABC):
 
     def _regularizer(self, w):
         regularizer = 0
+        b, w = _split_intercept(w)
         for (start, end), reg in zip(self.groups, self.reg_):
-            regularizer += reg*la.norm(w[start:end, :])
+            regularizer += reg * la.norm(w[start:end, :])
         return regularizer
 
     def _get_reg_vector(self, reg):
         if isinstance(reg, Number):
-            return [reg*sqrt(end - start) for start, end in self.groups]
+            return [reg * sqrt(end - start) for start, end in self.groups]
         return reg
-    
+
     @abstractmethod
     def _unregularised_loss(self, X, y, w):
         pass
@@ -140,7 +154,7 @@ class BaseGroupLasso(ABC):
         return self._loss(X, y, self.coef_)
 
     @abstractmethod
-    def _compute_lipschitz(self, X):
+    def _compute_lipschitz(self, X, y):
         pass
 
     @abstractmethod
@@ -150,14 +164,25 @@ class BaseGroupLasso(ABC):
     def _minimise_loss(self, X, y, lipschitz=None):
         """Use the FISTA algorithm to solve the group lasso regularised loss.
         """
+        if self.fit_intercept:
+            X = _add_intercept_col(X)
+
         if lipschitz is None:
-            lipschitz = self._compute_lipschitz(X)
+            lipschitz = self._compute_lipschitz(X, y)
+
+        if not self.fit_intercept:
+            X = _add_intercept_col(X)
 
         def grad(w):
-            return self._grad(X, y, w)
+            g = self._grad(X, y, w)
+            if not self.fit_intercept:
+                g[0] = 0
+            return g
 
         def prox(w):
-            return _group_l2_prox(w, self.reg_, self.groups)
+            b, w_ = _split_intercept(w)
+            w_ = _group_l2_prox(w_, self.reg_, self.groups)
+            return _join_intercept(b, w_)
 
         def loss(w):
             X_, y_ = subsample(self.subsampling_scheme, X, y)
@@ -171,33 +196,35 @@ class BaseGroupLasso(ABC):
             self.losses_.append(self._loss(X_, y_, w))
 
             if previous_w is None and _DEBUG:
-                print(f'Starting FISTA: ')
-                print(f'\tInitial loss: {self._loss(X_, y_, w)}')
+                print(f"Starting FISTA: ")
+                print(f"\tInitial loss: {self._loss(X_, y_, w)}")
 
             elif _DEBUG:
-                print(f'Completed iteration {it_num}:')
-                print(f'\tLoss: {self._loss(X_, y_, w)}')
-                print(f'\tWeight difference: {la.norm(w-previous_w)}')
-                print(f'\tWeight norm: {la.norm(w)}')
-                print(f'\tGrad: {la.norm(grad(w))}')
+                print(f"Completed iteration {it_num}:")
+                print(f"\tLoss: {self._loss(X_, y_, w)}")
+                print(f"\tWeight difference: {la.norm(w-previous_w)}")
+                print(f"\tWeight norm: {la.norm(w)}")
+                print(f"\tGrad: {la.norm(grad(w))}")
 
-        self.coef_ = fista(
-            self.coef_,
+        weights = np.concatenate([[[self.intercept_]], self.coef_])
+        weights = fista(
+            weights,
             grad=grad,
             prox=prox,
             loss=loss,
             lipschitz=lipschitz,
             n_iter=self.n_iter,
             tol=self.tol,
-            callback=callback
+            callback=callback,
         )
+        self.intercept, self.coef_ = _split_intercept(weights)
 
         warnings.warn(
-            'The FISTA iterations did not converge to a sufficient minimum.\n'
-            f'You used subsampling then this is expected, otherwise,'
-            'try to increase the number of iterations '
-            'or decreasing the tolerance.',
-            RuntimeWarning
+            "The FISTA iterations did not converge to a sufficient minimum.\n"
+            f"You used subsampling then this is expected, otherwise,"
+            "try to increase the number of iterations "
+            "or decreasing the tolerance.",
+            RuntimeWarning,
         )
 
     def _check_valid_parameters(self, X, y):
@@ -219,11 +246,12 @@ class BaseGroupLasso(ABC):
         self.losses_ = []
         self.coef_ = np.random.randn(X.shape[1], 1)
         self.coef_ /= la.norm(self.coef_)
+        self.intercept_ = 0
 
     def fit(self, X, y, lipschitz=None):
         self._init_fit(X, y)
         self._minimise_loss(X, y, lipschitz=lipschitz)
-    
+
     @abstractmethod
     def predict(self, X):
         pass
@@ -248,9 +276,15 @@ class BaseGroupLasso(ABC):
     def fit_transform(self, X, y, lipschitz=None):
         self.fit(X, y, lipschitz)
         return self.transform(X)
-    
+
     def subsample(self, *args):
         return subsample(self.subsampling_scheme, *args)
+
+
+def _l2_grad(A, b, x):
+    """The gradient of the problem ||Ax - b||^2 wrt x.
+    """
+    return A.T @ (A @ x - b)
 
 
 class GroupLasso(BaseGroupLasso):
@@ -261,6 +295,7 @@ class GroupLasso(BaseGroupLasso):
         n_iter=1000,
         tol=1e-5,
         subsampling_scheme=1,
+        fit_intercept=True,
         frobenius_lipschitz=False,
     ):
         """
@@ -299,71 +334,82 @@ class GroupLasso(BaseGroupLasso):
             slowly. If False, then subsampled power iterations are used.
             Using the Frobenius approximation for the Lipschitz coefficient
             might fail, and end up with all-zero weights.
+        fit_intercept : bool (default=True)
         """
         super().__init__(
             groups=groups,
             reg=reg,
             n_iter=n_iter,
             tol=tol,
-            subsampling_scheme=subsampling_scheme
+            subsampling_scheme=subsampling_scheme,
+            fit_intercept=fit_intercept,
         )
         self.frobenius_lipchitz = frobenius_lipschitz
 
     def predict(self, X):
-        return X@self.coef_
+        return self.intercept_ + X @ self.coef_
 
     def _unregularised_loss(self, X, y, w):
         X_, y_ = self.subsample(X, y)
-        MSE = np.sum((X_@w - y_)**2)/len(X_)
-        return MSE + self._regularizer(w)
+        MSE = 0.5*np.sum((X_ @ w - y_) ** 2) / len(X_)
+        return MSE
 
     def _grad(self, X, y, w):
         X_, y_ = self.subsample(X, y)
         SSE_grad = _l2_grad(X_, y_, w)
-        return SSE_grad/len(X_)
+        return SSE_grad / len(X_)
 
-    def _compute_lipschitz(self, X):
+    def _compute_lipschitz(self, X, y):
         num_rows, num_cols = X.shape
         if self.frobenius_lipchitz:
-            return la.norm(X, 'fro')**2/(num_rows*num_cols)
+            return la.norm(X, "fro") ** 2 / (num_rows * num_cols)
 
-        SSE_lipschitz = 1.5*find_largest_singular_value(
-            X, subsampling_scheme=self.subsampling_scheme
-        )**2
-        return SSE_lipschitz/num_rows
+        SSE_lipschitz = (
+            1.5
+            * find_largest_singular_value(
+                X, subsampling_scheme=self.subsampling_scheme
+            )
+            ** 2
+        )
+        return SSE_lipschitz / num_rows
 
 
 def _sigmoid(x):
-    return 1/(1 + np.exp(-x))
+    return 1 / (1 + np.exp(-x))
+
+
+def _logit(X, w):
+    return X @ w
 
 
 def _logistic_proba(X, w):
-    return _sigmoid(X@w)
+    return _sigmoid(_logit(X, w))
 
 
 def _logistic_cross_entropy(X, y, w):
     p = _logistic_proba(X, w)
-    return -(y*np.log(p) + (1-y)*np.log(1-p))
+    return -(y * np.log(p) + (1 - y) * np.log(1 - p))
 
 
 class LogisticGroupLasso(BaseGroupLasso):
     """WARNING: Experimental.
     """
+
     def _compute_proba(self, X, w):
-        return _sigmoid(X@w)
+        return _sigmoid(X @ w)
 
     def _unregularised_loss(self, X, y, w):
         X_, y_ = self.subsample(X, y)
-        return _logistic_cross_entropy(X_, y_, w).sum()/len(X)
-    
+        return _logistic_cross_entropy(X_, y_, w).sum() / len(X)
+
     def _grad(self, X, y, w):
         X_, y_ = self.subsample(X, y)
         p = _logistic_proba(X_, w)
-        return X_.T@(p-y_)/len(X_)
-    
-    def _compute_lipschitz(self, X):
-        return np.sqrt(12)*np.linalg.norm(X, 'fro')/len(X)
-    
+        return X_.T @ (p - y_) / len(X_)
+
+    def _compute_lipschitz(self, X, y):
+        return np.sqrt(12) * np.linalg.norm(X, "fro") / len(X)
+
     def predict_proba(self, X):
         return _logistic_proba(X, self.coef_)
 
