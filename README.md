@@ -24,13 +24,11 @@ The todos are, in decreasing order of importance
     - Create wheels
     - Upload to PyPI
  3. Write more docstrings
- 4. Improve API
-    - Groups should really be provided as boolean masks, not the tuple structure currently used 
- 5. Better ScikitLearn compatibility
+ 4. Better ScikitLearn compatibility
     - Use Mixins?
     - Use randomness correctly
- 6. Multiple regression
- 7. Classification problems (I have an experimental implementation, but it's not tested yet)
+ 5. Multiple regression
+ 6. Classification problems (I have an experimental implementation, but it's not tested yet)
 
 Unfortunately, the most interesting parts are the least important ones, so expect the list
 to be worked on from both ends simultaneously.
