@@ -1,7 +1,8 @@
+from abc import ABC, abstractmethod
 from math import sqrt
+from functools import wraps
 from numbers import Number
 import warnings
-from abc import ABC, abstractmethod
 
 import numpy.linalg as la
 import numpy as np
@@ -457,3 +458,5 @@ class LogisticGroupLasso(BaseGroupLasso):
                 f"This will simply train {n} different models meaning that "
                 f"multiple classes can be predicted as true at once."
             )
+        
+        super().fit(X, y, lipschitz=lipschitz)
