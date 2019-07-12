@@ -37,7 +37,8 @@ def _split_intercept(w):
 
 
 def _join_intercept(b, w):
-    return np.concatenate([np.array(b).reshape(1, 1), w], axis=0)
+    m, n = w.shape
+    return np.concatenate([np.array(b).reshape(1, n), w], axis=0)
 
 
 def _add_intercept_col(X):
@@ -133,7 +134,7 @@ class BaseGroupLasso(ABC):
     def _regularizer(self, w):
         regularizer = 0
         b, w = _split_intercept(w)
-        for group, reg in zip(self.groups_, self.reg_):
+        for group, reg in zip(self.groups_, self.reg_vector):
             regularizer += reg * la.norm(w[group, :])
         return regularizer
 
@@ -180,7 +181,7 @@ class BaseGroupLasso(ABC):
 
         def prox(w):
             b, w_ = _split_intercept(w)
-            w_ = _group_l2_prox(w_, self.reg_, self.groups_)
+            w_ = _group_l2_prox(w_, self.reg_vector, self.groups_)
             return _join_intercept(b, w_)
 
         def loss(w):
@@ -205,7 +206,7 @@ class BaseGroupLasso(ABC):
                 print(f"\tWeight norm: {la.norm(w)}")
                 print(f"\tGrad: {la.norm(grad(w))}")
 
-        weights = np.concatenate([[[self.intercept_]], self.coef_])
+        weights = np.concatenate([self.intercept_, self.coef_])
         weights = fista(
             weights,
             grad=grad,
@@ -226,28 +227,31 @@ class BaseGroupLasso(ABC):
             RuntimeWarning,
         )
 
-    def _check_valid_parameters(self, X, y):
-        assert all(reg >= 0 for reg in self.reg_)
-        assert len(self.reg_) == len(self.groups)
+    def _check_valid_parameters(self):
+        assert all(reg >= 0 for reg in self.reg_vector)
+        assert len(self.reg_vector) == len(np.unique(self.groups))
         assert self.n_iter > 0
         assert self.tol >= 0
-        for group1, group2 in zip(self.groups[:-1], self.groups[1:]):
-            assert group1[0] < group1[1]
-            assert group1[1] <= group2[0]
 
+    def _prepare_dataset(self, X, y):
         if len(y.shape) != 1:
-            assert y.shape[1] == 1
+            pass
+            # assert y.shape[1] == 1
         else:
             y = y.reshape(-1, 1)
+        return X, y
 
     def _init_fit(self, X, y):
+        X, y = self._prepare_dataset(X, y)
         groups = np.array([-1 if i is None else i for i in self.groups])
         self.groups_ = [self.groups == u for u in np.unique(groups) if u >= 0]
-        self.reg_ = self._get_reg_vector(self.reg)
+        self.reg_vector = self._get_reg_vector(self.reg)
         self.losses_ = []
-        self.coef_ = np.random.randn(X.shape[1], 1)
+        self.coef_ = np.random.randn(X.shape[1], y.shape[1])
         self.coef_ /= la.norm(self.coef_)
-        self.intercept_ = 0
+        self.intercept_ = np.zeros((1, self.coef_.shape[1])) 
+
+        self._check_valid_parameters()
 
     def fit(self, X, y, lipschitz=None):
         self._init_fit(X, y)

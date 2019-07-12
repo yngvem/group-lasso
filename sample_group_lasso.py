@@ -8,8 +8,8 @@ import group_lasso._group_lasso
 import numpy as np
 
 
-group_lasso._singular_values._DEBUG = True
-group_lasso._group_lasso._DEBUG = True
+# group_lasso._singular_values._DEBUG = True
+# group_lasso._group_lasso._DEBUG = True
 
 
 if __name__ == "__main__":
@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     np.random.seed(0)
 
-    group_sizes = [np.random.randint(5, 15) for i in range(50)]
+    group_sizes = [np.random.randint(5, 15) for i in range(100)]
     groups = get_groups_from_group_sizes(group_sizes)
     num_coeffs = sum(group_sizes)
     num_datapoints = 100_000
@@ -25,15 +25,19 @@ if __name__ == "__main__":
     coeff_noise_level = 0.05
 
     print("Generating data")
-    X = np.random.randn(num_datapoints, num_coeffs)
+    X = np.random.standard_normal((num_datapoints, num_coeffs))
+    intercept = 2
+
     print("Generating coefficients")
-    w = generate_group_lasso_coefficients(group_sizes)
+    w1 = generate_group_lasso_coefficients(group_sizes)
+    w2 = generate_group_lasso_coefficients(group_sizes)
+    w = np.hstack((w1, w2)) 
     w += np.random.randn(*w.shape) * coeff_noise_level
 
     print("Generating targets")
     y = X @ w
     y += np.random.randn(*y.shape) * noise_level * y
-    y += 2
+    y += intercept
 
     gl = GroupLasso(
         groups=groups,
@@ -47,18 +51,32 @@ if __name__ == "__main__":
     print("Starting fit")
     gl.fit(X, y)
 
-    plt.plot(w, ".", label="True weights")
-    plt.plot(gl.coef_, ".", label="Estimated weights")
-    plt.legend()
+    for i in range(w.shape[1]):
+        plt.figure()
+        plt.plot(w[:, i], ".", label="True weights")
+        plt.plot(gl.coef_[:, i], ".", label="Estimated weights")
+        plt.legend()
 
     plt.figure()
     plt.plot(gl.losses_)
+    plt.title('Loss curve')
+    plt.xlabel('Iteration')
+    plt.ylabel('Loss')
 
     plt.figure()
+    plt.plot(np.arange(1, len(gl.losses_)), gl.losses_[1:])
+    plt.title('Loss curve, ommitting first iteration')
+    plt.xlabel('Iteration')
+    plt.ylabel('Loss')
+
+    plt.figure()
+    plt.plot([w.min(), w.max()], [gl.coef_.min(), gl.coef_.max()], 'gray')
     plt.scatter(w, gl.coef_, s=10)
     plt.ylabel("Learned coefficients")
     plt.xlabel("True coefficients")
 
     print(f"X shape: {X.shape}")
     print(f"Transformed X shape: {gl.transform(X).shape}")
+    print(f"True intercept: {intercept}")
+    print(f"Estimated intercept: {gl.intercept_}")
     plt.show()

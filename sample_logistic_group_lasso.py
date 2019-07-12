@@ -26,17 +26,24 @@ if __name__ == "__main__":
 
     print("Generating data")
     X = np.random.randn(num_datapoints, num_coeffs)
+    intercept = 2
+
     print("Generating coefficients")
-    w = generate_group_lasso_coefficients(group_sizes)
+    w1 = generate_group_lasso_coefficients(group_sizes)
+    w2 = generate_group_lasso_coefficients(group_sizes)
+    w = np.hstack((w1, w2)) 
     w += np.random.randn(*w.shape) * coeff_noise_level
 
-    print("Generating targets")
+    print("Generating logits")
     y = X @ w
     y += np.random.randn(*y.shape) * noise_level * y
-    y += 3
+    y += intercept
+
+    print("Generating targets")
     p = 1 / (1 + np.exp(-y))
     z = np.random.binomial(1, p)
 
+    print("Starting fit")
     gl = LogisticGroupLasso(
         groups=groups,
         n_iter=10,
@@ -45,31 +52,42 @@ if __name__ == "__main__":
         subsampling_scheme=0.1,
         fit_intercept=True,
     )
-    print("Starting fit")
     gl.fit(X, z)
 
-    plt.plot(w, ".", label="True weights")
-    plt.plot(gl.coef_, ".", label="Estimated weights")
-    plt.title("Weights")
-    plt.legend()
+    for i in range(w.shape[1]):
+        plt.figure()
+        plt.plot(w[:, i], ".", label="True weights")
+        plt.plot(gl.coef_[:, i], ".", label="Estimated weights")
+        plt.legend()
 
-    plt.figure()
-    plt.plot(w / np.linalg.norm(w), ".", label="True weights")
-    plt.plot(
-        gl.coef_ / np.linalg.norm(gl.coef_), ".", label="Estimated weights"
-    )
-    plt.title("Normalised weights")
-    plt.legend()
+    for i in range(w.shape[1]):
+        plt.figure()
+        plt.plot(w[:, i]/np.linalg.norm(w[:, i]), ".", label="Normalised true weights")
+        plt.plot(gl.coef_[:, i]/np.linalg.norm(gl.coef_[:, i]), ".", label="Normalised estimated weights")
+        plt.legend()
 
     plt.figure()
     plt.plot(gl.losses_)
+    plt.title('Loss curve')
+    plt.xlabel('Iteration')
+    plt.ylabel('Loss')
 
     plt.figure()
+    plt.plot(np.arange(1, len(gl.losses_)), gl.losses_[1:])
+    plt.title('Loss curve, ommitting first iteration')
+    plt.xlabel('Iteration')
+    plt.ylabel('Loss')
+
+    plt.figure()
+    plt.plot([w.min(), w.max()], [gl.coef_.min(), gl.coef_.max()], 'gray')
     plt.scatter(w, gl.coef_, s=10)
     plt.ylabel("Learned coefficients")
     plt.xlabel("True coefficients")
 
     print(f"X shape: {X.shape}")
     print(f"Transformed X shape: {gl.transform(X).shape}")
+    print(f"True intercept: {intercept}")
+    print(f"Estimated intercept: {gl.intercept_}")
     print(f"Accuracy: {np.mean(z == gl.predict(X))}")
     plt.show()
+
