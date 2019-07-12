@@ -31,7 +31,7 @@ if __name__ == "__main__":
     print("Generating coefficients")
     w1 = generate_group_lasso_coefficients(group_sizes)
     w2 = generate_group_lasso_coefficients(group_sizes)
-    w = np.hstack((w1, w2)) 
+    w = np.hstack((w1, w2))
     w += np.random.randn(*w.shape) * coeff_noise_level
 
     print("Generating targets")
@@ -59,18 +59,18 @@ if __name__ == "__main__":
 
     plt.figure()
     plt.plot(gl.losses_)
-    plt.title('Loss curve')
-    plt.xlabel('Iteration')
-    plt.ylabel('Loss')
+    plt.title("Loss curve")
+    plt.xlabel("Iteration")
+    plt.ylabel("Loss")
 
     plt.figure()
     plt.plot(np.arange(1, len(gl.losses_)), gl.losses_[1:])
-    plt.title('Loss curve, ommitting first iteration')
-    plt.xlabel('Iteration')
-    plt.ylabel('Loss')
+    plt.title("Loss curve, ommitting first iteration")
+    plt.xlabel("Iteration")
+    plt.ylabel("Loss")
 
     plt.figure()
-    plt.plot([w.min(), w.max()], [gl.coef_.min(), gl.coef_.max()], 'gray')
+    plt.plot([w.min(), w.max()], [gl.coef_.min(), gl.coef_.max()], "gray")
     plt.scatter(w, gl.coef_, s=10)
     plt.ylabel("Learned coefficients")
     plt.xlabel("True coefficients")

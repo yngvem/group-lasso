@@ -249,7 +249,7 @@ class BaseGroupLasso(ABC):
         self.losses_ = []
         self.coef_ = np.random.randn(X.shape[1], y.shape[1])
         self.coef_ /= la.norm(self.coef_)
-        self.intercept_ = np.zeros((1, self.coef_.shape[1])) 
+        self.intercept_ = np.zeros((1, self.coef_.shape[1]))
 
         self._check_valid_parameters()
 
@@ -448,3 +448,12 @@ class LogisticGroupLasso(BaseGroupLasso):
 
     def predict(self, X):
         return self.predict_proba(X) >= 0.5
+
+    def fit(self, X, y, lipschitz=None):
+        if y.ndim == 2 and y.shape[1] > 1:
+            n = y.shape[1]
+            warnings.warn(
+                "You have passed {n} targets to a single class classifier. "
+                "This will simply train {n} different models meaning that "
+                "multiple classes can be predicted as true at once."
+            )

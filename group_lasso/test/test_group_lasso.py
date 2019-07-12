@@ -78,7 +78,7 @@ class BaseTestGroupLasso:
             yhat2 = sklearn_no_reg.predict(X).reshape(yhat1.shape)
 
             assert np.allclose(yhat1, yhat2)
-    
+
     # TODO: FIND SPARSITY PATTERNS WITH NOISE
 
 
