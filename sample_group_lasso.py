@@ -3,8 +3,6 @@ from group_lasso._utils import (
     get_groups_from_group_sizes,
     generate_group_lasso_coefficients,
 )
-import group_lasso._singular_values
-import group_lasso._group_lasso
 import numpy as np
 
 

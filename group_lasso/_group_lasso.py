@@ -363,10 +363,10 @@ class GroupLasso(BaseGroupLasso):
             in X.
         frobenius_lipschitz : Bool [default=False]
             Use the Frobenius norm to estimate the lipschitz coefficient of the
-            MSE loss. This works well for systems whose power iterations converge
-            slowly. If False, then subsampled power iterations are used.
-            Using the Frobenius approximation for the Lipschitz coefficient
-            might fail, and end up with all-zero weights.
+            MSE loss. This works well for systems whose power iterations
+            converge slowly. If False, then subsampled power iterations are
+            used. Using the Frobenius approximation for the Lipschitz
+            coefficient might fail, and end up with all-zero weights.
         fit_intercept : bool (default=True)
         """
         super().__init__(
@@ -453,7 +453,7 @@ class LogisticGroupLasso(BaseGroupLasso):
         if y.ndim == 2 and y.shape[1] > 1:
             n = y.shape[1]
             warnings.warn(
-                "You have passed {n} targets to a single class classifier. "
-                "This will simply train {n} different models meaning that "
-                "multiple classes can be predicted as true at once."
+                f"You have passed {n} targets to a single class classifier. "
+                f"This will simply train {n} different models meaning that "
+                f"multiple classes can be predicted as true at once."
             )
