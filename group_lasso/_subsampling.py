@@ -7,18 +7,19 @@ def _extract_from_singleton_iterable(inputs):
     return tuple(inputs)
 
 
-def _random_row_idxes(num_rows, subsampling_scheme):
-    if subsampling_scheme == 1:
+def _get_random_row_idxes(num_rows, subsampling_scheme):
+    if subsampling_scheme is None:
         return range(num_rows)
-    elif (
-        isinstance(subsampling_scheme, str)
-        and subsampling_scheme.lower() == "sqrt"
-    ):
-        num_subsampled_rows = int(np.sqrt(num_rows))
-    elif subsampling_scheme < 1:
+    elif isinstance(subsampling_scheme, str):
+        if subsampling_scheme.lower() == "sqrt":
+            num_subsampled_rows = int(np.sqrt(num_rows))
+        else:
+            raise ValueError("Not valid subsampling scheme")
+    elif subsampling_scheme < 1 and subsampling_scheme > 0:
         num_subsampled_rows = int(num_rows * subsampling_scheme)
-    elif subsampling_scheme > 1 and isinstance(subsampling_scheme, int):
-        assert subsampling_scheme < num_rows
+    elif subsampling_scheme >= 1 and isinstance(subsampling_scheme, int):
+        if subsampling_scheme > num_rows:
+            raise ValueError("Cannot subsample more rows than there are present")
         num_subsampled_rows = subsampling_scheme
     else:
         raise ValueError("Not valid subsampling scheme")
@@ -29,7 +30,7 @@ def _random_row_idxes(num_rows, subsampling_scheme):
 
 
 def subsampling_fraction(num_rows, subsampling_scheme):
-    return len(_random_row_idxes(num_rows, subsampling_scheme)) / num_rows
+    return len(_get_random_row_idxes(num_rows, subsampling_scheme)) / num_rows
 
 
 def subsample(subsampling_scheme, *Xs):
@@ -50,5 +51,5 @@ def subsample(subsampling_scheme, *Xs):
         return _extract_from_singleton_iterable(Xs)
 
     num_rows = len(Xs[0])
-    inds = _random_row_idxes(num_rows, subsampling_scheme)
+    inds = _get_random_row_idxes(num_rows, subsampling_scheme)
     return _extract_from_singleton_iterable([X[inds, :] for X in Xs])
