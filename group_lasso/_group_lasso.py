@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from math import sqrt
-from functools import wraps
 from numbers import Number
 import warnings
 
@@ -77,7 +76,7 @@ class BaseGroupLasso(ABC):
         reg=0.05,
         n_iter=1000,
         tol=1e-5,
-        subsampling_scheme=1,
+        subsampling_scheme=None,
         fit_intercept=True,
     ):
         """
@@ -329,7 +328,7 @@ class GroupLasso(BaseGroupLasso):
         reg=0.05,
         n_iter=1000,
         tol=1e-5,
-        subsampling_scheme=1,
+        subsampling_scheme=None,
         fit_intercept=True,
         frobenius_lipschitz=False,
     ):
@@ -458,5 +457,5 @@ class LogisticGroupLasso(BaseGroupLasso):
                 f"This will simply train {n} different models meaning that "
                 f"multiple classes can be predicted as true at once."
             )
-        
+
         super().fit(X, y, lipschitz=lipschitz)
