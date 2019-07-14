@@ -23,19 +23,19 @@ Todos:
 The todos are, in decreasing order of importance
 
  1. Write a better readme
+
     - Code examples
     - Installation guide (after point 2.)
     - Better description of Group LASSO
- 2. Make easy to install
-    - Create setup.py
-    - Create wheels
-    - Upload to PyPI
- 3. Write more docstrings
- 4. Python 3.5 compatibility
- 5. Better ScikitLearn compatibility
+
+ 2. Write more docstrings
+ 3. Python 3.5 compatibility
+ 4. Better ScikitLearn compatibility
+
     - Use Mixins?
     - Use randomness correctly
- 6. Classification problems (I have an experimental implementation, but it's not tested yet)
+
+ 5. Classification problems (I have an experimental implementation, but it's not tested yet)
 
 Unfortunately, the most interesting parts are the least important ones, so expect the list
 to be worked on from both ends simultaneously.
@@ -52,7 +52,9 @@ Finally, we note that since FISTA uses Nesterov acceleration, is not a descent a
 
 References
 ----------
+
 [1]: Yuan, M. and Lin, Y. (2006), Model selection and estimation in regression with grouped variables. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 68: 49-67. doi:10.1111/j.1467-9868.2005.00532.x
 
 [2]: Beck, A. and Teboulle, M. (2009), A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems. SIAM Journal on Imaging Sciences 2009 2:1, 183-202. doi:10.1137/080716542  
+
 [3]: O’Donoghue, B. & Candès, E. (2015), Adaptive Restart for Accelerated Gradient Schemes. Found Comput Math 15: 715. doi:10.1007/s10208-013-9150-
