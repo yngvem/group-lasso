@@ -22,20 +22,20 @@ Todos:
 ------
 The todos are, in decreasing order of importance
 
- 1. Write a better readme
+1. Write a better readme
 
-    - Code examples
-    - Installation guide (after point 2.)
-    - Better description of Group LASSO
+   - Code examples
+   - Installation guide (after point 2.)
+   - Better description of Group LASSO
 
- 2. Write more docstrings
- 3. Python 3.5 compatibility
- 4. Better ScikitLearn compatibility
+2. Write more docstrings
+3. Python 3.5 compatibility
+4. Better ScikitLearn compatibility
 
-    - Use Mixins?
-    - Use randomness correctly
+   - Use Mixins?
+   - Use randomness correctly
 
- 5. Classification problems (I have an experimental implementation, but it's not tested yet)
+5. Classification problems (I have an experimental implementation, but it's not tested yet)
 
 Unfortunately, the most interesting parts are the least important ones, so expect the list
 to be worked on from both ends simultaneously.
