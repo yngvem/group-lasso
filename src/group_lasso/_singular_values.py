@@ -45,6 +45,7 @@ def find_largest_singular_value(
     v /= s
     for i in range(maxits):
         s_ = s
+        v_ = v
         v, s = _subsampled_power_iteration(
             X, v, subsampling_scheme, random_state=random_state
         )
@@ -53,6 +54,10 @@ def find_largest_singular_value(
         improvement = abs(s - s_) / max(abs(s), abs(s_))
         if improvement < tol and i > 0:
             return np.sqrt(s)
+
+        if s < s_:
+            s = s_
+            v = v_
 
         if _DEBUG:
             print(

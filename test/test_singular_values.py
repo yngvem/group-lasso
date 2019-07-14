@@ -64,4 +64,4 @@ def test_subsampled_find_largest_singular_value(random_svd):
         X, subsampling_scheme="sqrt", random_state=np.random
     )
 
-    assert abs(smax - s[0]) / max(smax, s[0]) < SUBSAMPLED_TOL
+    assert (s[0] - smax) / max(smax, s[0]) < SUBSAMPLED_TOL
