@@ -269,9 +269,7 @@ class BaseGroupLasso(ABC):
     def sparsity_mask(self):
         pattern = np.zeros(len(self.coef_), dtype=bool)
         for group in self.groups_:
-            pattern[group] = not np.allclose(
-                self.coef_[group], 0, atol=0, rtol=1e-10
-            )
+            pattern[group] = not np.allclose(self.coef_[group], 0, atol=0, rtol=1e-10)
 
         return pattern
 
@@ -399,9 +397,7 @@ class GroupLasso(BaseGroupLasso):
 
         SSE_lipschitz = (
             1.5
-            * find_largest_singular_value(
-                X, subsampling_scheme=self.subsampling_scheme
-            )
+            * find_largest_singular_value(X, subsampling_scheme=self.subsampling_scheme)
             ** 2
         )
         return SSE_lipschitz / num_rows

@@ -14,12 +14,8 @@ def _fista_it(x, momentum_x, momentum, lipschitz, grad, prox):
     dx = new_x - x
     new_momentum_x = new_x + dx * (momentum - 1) / momentum
 
-    if (momentum_x.ravel() - new_x.ravel()).T @ (
-        new_x.ravel() - x.ravel()
-    ) > 0:
-        new_x, new_momentum_x, new_momentum = _fista_it(
-            x, x, 1, lipschitz, grad, prox
-        )
+    if (momentum_x.ravel() - new_x.ravel()).T @ (new_x.ravel() - x.ravel()) > 0:
+        new_x, new_momentum_x, new_momentum = _fista_it(x, x, 1, lipschitz, grad, prox)
 
     return new_x, new_momentum_x, new_momentum
 

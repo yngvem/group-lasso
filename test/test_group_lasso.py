@@ -2,7 +2,7 @@ from contextlib import contextmanager
 import numpy as np
 import numpy.linalg as la
 import pytest
-from .. import _group_lasso
+from group_lasso import _group_lasso
 from sklearn.linear_model import LinearRegression, LogisticRegression
 
 np.random.seed(0)
@@ -62,9 +62,7 @@ class BaseTestGroupLasso:
             for i, _ in enumerate(w):
                 w_ = w.copy()
                 w_[i] += eps
-                dw[i] = (gl._unregularised_loss(X, y, w_) - loss) / (
-                    w_[i] - w[i]
-                )
+                dw[i] = (gl._unregularised_loss(X, y, w_) - loss) / (w_[i] - w[i])
                 g = gl._grad(X, y, w)
             assert la.norm(dw - g) / la.norm(g) < 1e-3
 
