@@ -5,6 +5,7 @@ import warnings
 
 import numpy.linalg as la
 import numpy as np
+from sklearn.utils import check_random_state
 
 from group_lasso._singular_values import find_largest_singular_value
 from group_lasso._subsampling import subsample
@@ -61,7 +62,7 @@ class BaseGroupLasso(ABC):
     [2]: Beck A, Teboulle M. A fast iterative shrinkage-thresholding algorithm
          for linear inverse problems. SIAM journal on imaging sciences.
          2009 Mar 4;2(1):183-202.
-    [3]: O’donoghue B, Candes E. Adaptive restart for accelerated gradient
+    [3]: O’Donoghue B, Candes E. Adaptive restart for accelerated gradient
          schemes. Foundations of computational mathematics.
          2015 Jun 1;15(3):715-32.
     """
@@ -78,6 +79,7 @@ class BaseGroupLasso(ABC):
         tol=1e-5,
         subsampling_scheme=None,
         fit_intercept=True,
+        random_state=None,
     ):
         """
 
@@ -109,6 +111,8 @@ class BaseGroupLasso(ABC):
             in the computations is the square root of the number of rows
             in X.
         fit_intercept : bool (default=True)
+        random_state : np.random.RandomState
+            The random state used for initialisation of parameters.
         """
         self.groups = groups
         self.reg = reg
@@ -116,6 +120,7 @@ class BaseGroupLasso(ABC):
         self.tol = tol
         self.subsampling_scheme = subsampling_scheme
         self.fit_intercept = fit_intercept
+        self.random_state = random_state
 
     def get_params(self, deep=True):
         return {
@@ -185,11 +190,11 @@ class BaseGroupLasso(ABC):
             return _join_intercept(b, w_)
 
         def loss(w):
-            X_, y_ = subsample(self.subsampling_scheme, X, y)
+            X_, y_ = self.subsample(X, y)
             self._loss(X_, y_, w)
 
         def callback(x, it_num, previous_x=None):
-            X_, y_ = subsample(self.subsampling_scheme, X, y)
+            X_, y_ = self.subsample(X, y)
             w = x
             previous_w = previous_x
 
@@ -244,10 +249,11 @@ class BaseGroupLasso(ABC):
     def _init_fit(self, X, y):
         X, y = self._prepare_dataset(X, y)
         groups = np.array([-1 if i is None else i for i in self.groups])
+        self.random_state_ = check_random_state(self.random_state)
         self.groups_ = [self.groups == u for u in np.unique(groups) if u >= 0]
         self.reg_vector = self._get_reg_vector(self.reg)
         self.losses_ = []
-        self.coef_ = np.random.randn(X.shape[1], y.shape[1])
+        self.coef_ = self.random_state_.standard_normal((X.shape[1], y.shape[1]))
         self.coef_ /= la.norm(self.coef_)
         self.intercept_ = np.zeros((1, self.coef_.shape[1]))
 
@@ -281,7 +287,7 @@ class BaseGroupLasso(ABC):
         return self.transform(X)
 
     def subsample(self, *args):
-        return subsample(self.subsampling_scheme, *args)
+        return subsample(self.subsampling_scheme, random_state=self.random_state_, *args)
 
 
 def _l2_grad(A, b, x):
@@ -395,11 +401,10 @@ class GroupLasso(BaseGroupLasso):
         if self.frobenius_lipchitz:
             return la.norm(X, "fro") ** 2 / (num_rows * num_cols)
 
-        SSE_lipschitz = (
-            1.5
-            * find_largest_singular_value(X, subsampling_scheme=self.subsampling_scheme)
-            ** 2
+        s_max = find_largest_singular_value(
+            X, subsampling_scheme=self.subsampling_scheme, random_state=self.random_state_
         )
+        SSE_lipschitz = 1.5 * s_max ** 2
         return SSE_lipschitz / num_rows
 
 

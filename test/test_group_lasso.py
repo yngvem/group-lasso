@@ -40,6 +40,7 @@ class BaseTestGroupLasso:
         X, y, w = ml_problem
 
         with self.all_configs(gl_no_reg) as gl:
+            gl._init_fit(X, y)
             L = gl._compute_lipschitz(X, y)
 
             g1 = gl._grad(X, y, w)
@@ -53,18 +54,19 @@ class BaseTestGroupLasso:
     def test_grad(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
         w = self.random_weights()
-        eps = 1e-10
+        eps = 1e-5
 
         with self.all_configs(gl_no_reg) as gl:
+            gl._init_fit(X, y)
             loss = gl._unregularised_loss(X, y, w)
-            print(loss)
             dw = np.empty_like(w)
+            g = gl._grad(X, y, w)
             for i, _ in enumerate(w):
                 w_ = w.copy()
                 w_[i] += eps
                 dw[i] = (gl._unregularised_loss(X, y, w_) - loss) / (w_[i] - w[i])
-                g = gl._grad(X, y, w)
-            assert la.norm(dw - g) / la.norm(g) < 1e-3
+                assert abs((dw[i] - g[i]))/abs(g[i]) < 1e-2
+            assert la.norm(dw - g) / la.norm(g) < 1e-2
 
     def test_unregularised_fit_equal_sklearn(
         self, gl_no_reg, sklearn_no_reg, ml_problem
@@ -112,4 +114,4 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
             sklearn_no_reg.fit(X, y)
             yhat2 = sklearn_no_reg.predict(X)
 
-            assert np.mean(yhat1.astype(float) - yhat2.astype(float)) < 1e-2
+            assert np.mean(yhat1.astype(float) - yhat2.astype(float)) < 5e-2

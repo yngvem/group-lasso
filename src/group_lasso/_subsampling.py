@@ -7,7 +7,7 @@ def _extract_from_singleton_iterable(inputs):
     return tuple(inputs)
 
 
-def _get_random_row_idxes(num_rows, subsampling_scheme):
+def _get_random_row_idxes(num_rows, subsampling_scheme, random_state):
     if subsampling_scheme is None:
         return range(num_rows)
     elif isinstance(subsampling_scheme, str):
@@ -24,16 +24,18 @@ def _get_random_row_idxes(num_rows, subsampling_scheme):
     else:
         raise ValueError("Not valid subsampling scheme")
 
-    inds = np.random.choice(num_rows, num_subsampled_rows, replace=False)
+    inds = random_state.choice(num_rows, num_subsampled_rows, replace=False)
     inds.sort()
     return inds
 
 
-def subsampling_fraction(num_rows, subsampling_scheme):
-    return len(_get_random_row_idxes(num_rows, subsampling_scheme)) / num_rows
+def subsampling_fraction(num_rows, subsampling_scheme, random_state):
+    return len(
+        _get_random_row_idxes(num_rows, subsampling_scheme, random_state=random_state)
+    ) / num_rows
 
 
-def subsample(subsampling_scheme, *Xs):
+def subsample(subsampling_scheme, *Xs, random_state):
     """Subsample along first (0-th) axis of the Xs arrays.
 
     Arguments
@@ -51,5 +53,5 @@ def subsample(subsampling_scheme, *Xs):
         return _extract_from_singleton_iterable(Xs)
 
     num_rows = len(Xs[0])
-    inds = _get_random_row_idxes(num_rows, subsampling_scheme)
+    inds = _get_random_row_idxes(num_rows, subsampling_scheme, random_state=random_state)
     return _extract_from_singleton_iterable([X[inds, :] for X in Xs])
