@@ -1,5 +1,5 @@
 from group_lasso import GroupLasso
-from _utils import get_groups_from_group_sizes, generate_group_lasso_coefficients
+from utils import get_groups_from_group_sizes, generate_group_lasso_coefficients
 import numpy as np
 
 
