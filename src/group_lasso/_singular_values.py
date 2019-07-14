@@ -4,7 +4,7 @@ import numpy as np
 import numpy.linalg as la
 from math import sqrt
 
-from ._subsampling import subsample, subsampling_fraction
+from group_lasso._subsampling import subsample, subsampling_fraction
 
 _DEBUG = False
 LIPSCHITZ_MAXITS = 20

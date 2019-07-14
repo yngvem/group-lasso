@@ -6,9 +6,9 @@ import warnings
 import numpy.linalg as la
 import numpy as np
 
-from ._singular_values import find_largest_singular_value
-from ._subsampling import subsample
-from ._fista import fista
+from group_lasso._singular_values import find_largest_singular_value
+from group_lasso._subsampling import subsample
+from group_lasso._fista import fista
 
 
 _DEBUG = False
