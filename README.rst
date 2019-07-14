@@ -45,7 +45,6 @@ The todos are, in decreasing order of importance
 4. Better ScikitLearn compatibility
 
    - Use Mixins?
-   - Use randomness correctly
 
 5. Classification problems (I have an experimental implementation, but it's not tested yet)
 
