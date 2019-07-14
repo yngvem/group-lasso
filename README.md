@@ -1,4 +1,6 @@
-# Group Lasso
+Group Lasso
+===========
+
 The group lasso [1] regulariser is a well known method to achieve structured sparsity
 in machine learning and statistics. The idea is to create non-overlapping groups of
 covariate, and recover regression weights in which only a sparse set of these covariate
@@ -12,10 +14,12 @@ to a sparse set of sensors, since they each generate five measurements. If we in
 use group LASSO with measurements grouped by which sensor they were measured by, then
 we will get a sparse set of sensors.
 
-# About this project
+About this project:
+-------------------
 This project is developed by Yngve Mardal Moe and released under an MIT lisence.
 
-## Todos:
+Todos:
+------
 The todos are, in decreasing order of importance
 
  1. Write a better readme
@@ -36,7 +40,8 @@ The todos are, in decreasing order of importance
 Unfortunately, the most interesting parts are the least important ones, so expect the list
 to be worked on from both ends simultaneously.
 
-## Implementation details
+Implementation details
+----------------------
 The problem is solved using the FISTA optimiser [2] with a gradient-based adaptive restarting scheme [3]. No line search is currently implemented, but I hope to look at that later.
 
 Although fast, the FISTA optimiser does not achieve as low loss values as the significantly slower second order interior point methods. This might, at first glance, seem like a problem. However, it does recover the sparsity patterns of the data, which can be used to train a new model with the given subset of the features.
@@ -45,7 +50,8 @@ Also, even though the FISTA optimiser is not meant for stochastic optimisation, 
 
 Finally, we note that since FISTA uses Nesterov acceleration, is not a descent algorithm. We can therefore not expect the loss to decrease monotonically.
 
-## References
+References
+----------
 [1]: Yuan, M. and Lin, Y. (2006), Model selection and estimation in regression with grouped variables. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 68: 49-67. doi:10.1111/j.1467-9868.2005.00532.x
 
 [2]: Beck, A. and Teboulle, M. (2009), A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems. SIAM Journal on Imaging Sciences 2009 2:1, 183-202. doi:10.1137/080716542  
