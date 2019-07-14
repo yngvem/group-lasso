@@ -20,5 +20,6 @@ setup(
     install_requires=[
         'numpy',
         'scikit-learn'
-    ]
+    ],
+    extras_require={'test': ['pytest']}
 )
