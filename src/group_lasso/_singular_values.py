@@ -40,6 +40,7 @@ def find_largest_singular_value(
 ):
     """Find the largest singular value of X.
     """
+    # TODO: This should be some averaging not max-ing.
     v = random_state.randn(X.shape[1], 1)
     s = la.norm(v)
     v /= s
