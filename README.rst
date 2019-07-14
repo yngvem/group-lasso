@@ -22,17 +22,15 @@ Installation guide:
 -------------------
 The code can either be installed via pip, running the command
 
-```
-pip install group-lasso
-```
+.. code-block:: bash
+    pip install group-lasso
 
 or by manually pulling this repository and running the setup.py file
 
-```
-git clone https://github.com/yngvem/group-lasso.git
-cd group-lasso
-python setup.py
-```
+.. code-block:: bash
+    git clone https://github.com/yngvem/group-lasso.git
+    cd group-lasso
+    python setup.py
 
 Todos:
 ------
