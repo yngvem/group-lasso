@@ -2,7 +2,7 @@
 """
 
 
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 
 
-from ._group_lasso import GroupLasso, LogisticGroupLasso
+from group_lasso._group_lasso import GroupLasso, LogisticGroupLasso
