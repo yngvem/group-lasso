@@ -19,7 +19,9 @@ def _get_random_row_idxes(num_rows, subsampling_scheme, random_state):
         num_subsampled_rows = int(num_rows * subsampling_scheme)
     elif subsampling_scheme >= 1 and isinstance(subsampling_scheme, int):
         if subsampling_scheme > num_rows:
-            raise ValueError("Cannot subsample more rows than there are present")
+            raise ValueError(
+                "Cannot subsample more rows than there are present"
+            )
         num_subsampled_rows = subsampling_scheme
     else:
         raise ValueError("Not valid subsampling scheme")
@@ -30,9 +32,14 @@ def _get_random_row_idxes(num_rows, subsampling_scheme, random_state):
 
 
 def subsampling_fraction(num_rows, subsampling_scheme, random_state):
-    return len(
-        _get_random_row_idxes(num_rows, subsampling_scheme, random_state=random_state)
-    ) / num_rows
+    return (
+        len(
+            _get_random_row_idxes(
+                num_rows, subsampling_scheme, random_state=random_state
+            )
+        )
+        / num_rows
+    )
 
 
 def subsample(subsampling_scheme, *Xs, random_state):
@@ -53,5 +60,7 @@ def subsample(subsampling_scheme, *Xs, random_state):
         return _extract_from_singleton_iterable(Xs)
 
     num_rows = len(Xs[0])
-    inds = _get_random_row_idxes(num_rows, subsampling_scheme, random_state=random_state)
+    inds = _get_random_row_idxes(
+        num_rows, subsampling_scheme, random_state=random_state
+    )
     return _extract_from_singleton_iterable([X[inds, :] for X in Xs])

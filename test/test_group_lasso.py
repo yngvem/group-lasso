@@ -64,8 +64,10 @@ class BaseTestGroupLasso:
             for i, _ in enumerate(w):
                 w_ = w.copy()
                 w_[i] += eps
-                dw[i] = (gl._unregularised_loss(X, y, w_) - loss) / (w_[i] - w[i])
-                assert abs((dw[i] - g[i]))/abs(g[i]) < 1e-2
+                dw[i] = (gl._unregularised_loss(X, y, w_) - loss) / (
+                    w_[i] - w[i]
+                )
+                assert abs((dw[i] - g[i])) / abs(g[i]) < 1e-2
             assert la.norm(dw - g) / la.norm(g) < 1e-2
 
     def test_unregularised_fit_equal_sklearn(

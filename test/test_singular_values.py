@@ -36,7 +36,9 @@ def generate_matrix_from_svd(U, s, Vh):
 def test_find_largest_singular_value(random_svd):
     s = random_svd[1]
     X = generate_matrix_from_svd(*random_svd)
-    smax = _singular_values.find_largest_singular_value(X, random_state=np.random)
+    smax = _singular_values.find_largest_singular_value(
+        X, random_state=np.random
+    )
 
     assert abs(smax - s[0]) / max(smax, s[0]) < TOL
     assert smax < s[0]
@@ -58,6 +60,8 @@ def test_power_iteration(random_svd):
 def test_subsampled_find_largest_singular_value(random_svd):
     s = random_svd[1]
     X = generate_matrix_from_svd(*random_svd)
-    smax = _singular_values.find_largest_singular_value(X, subsampling_scheme="sqrt", random_state=np.random)
+    smax = _singular_values.find_largest_singular_value(
+        X, subsampling_scheme="sqrt", random_state=np.random
+    )
 
     assert abs(smax - s[0]) / max(smax, s[0]) < SUBSAMPLED_TOL

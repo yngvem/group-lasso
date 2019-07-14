@@ -18,7 +18,9 @@ def get_groups_from_group_sizes(group_sizes):
     groups = np.zeros(groups_indices[-1])
     # groups = [None] * len(group_sizes)
 
-    for i, (start, stop) in enumerate(zip(groups_indices[:-1], groups_indices[1:])):
+    for i, (start, stop) in enumerate(
+        zip(groups_indices[:-1], groups_indices[1:])
+    ):
         groups[start:stop] = i
         # groups[i] = (start, stop)
     return groups

@@ -253,7 +253,9 @@ class BaseGroupLasso(ABC):
         self.groups_ = [self.groups == u for u in np.unique(groups) if u >= 0]
         self.reg_vector = self._get_reg_vector(self.reg)
         self.losses_ = []
-        self.coef_ = self.random_state_.standard_normal((X.shape[1], y.shape[1]))
+        self.coef_ = self.random_state_.standard_normal(
+            (X.shape[1], y.shape[1])
+        )
         self.coef_ /= la.norm(self.coef_)
         self.intercept_ = np.zeros((1, self.coef_.shape[1]))
 
@@ -275,7 +277,9 @@ class BaseGroupLasso(ABC):
     def sparsity_mask(self):
         pattern = np.zeros(len(self.coef_), dtype=bool)
         for group in self.groups_:
-            pattern[group] = not np.allclose(self.coef_[group], 0, atol=0, rtol=1e-10)
+            pattern[group] = not np.allclose(
+                self.coef_[group], 0, atol=0, rtol=1e-10
+            )
 
         return pattern
 
@@ -287,7 +291,9 @@ class BaseGroupLasso(ABC):
         return self.transform(X)
 
     def subsample(self, *args):
-        return subsample(self.subsampling_scheme, random_state=self.random_state_, *args)
+        return subsample(
+            self.subsampling_scheme, random_state=self.random_state_, *args
+        )
 
 
 def _l2_grad(A, b, x):
@@ -402,7 +408,9 @@ class GroupLasso(BaseGroupLasso):
             return la.norm(X, "fro") ** 2 / (num_rows * num_cols)
 
         s_max = find_largest_singular_value(
-            X, subsampling_scheme=self.subsampling_scheme, random_state=self.random_state_
+            X,
+            subsampling_scheme=self.subsampling_scheme,
+            random_state=self.random_state_,
         )
         SSE_lipschitz = 1.5 * s_max ** 2
         return SSE_lipschitz / num_rows

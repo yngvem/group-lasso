@@ -1,5 +1,8 @@
 from group_lasso import LogisticGroupLasso
-from utils import get_groups_from_group_sizes, generate_group_lasso_coefficients
+from utils import (
+    get_groups_from_group_sizes,
+    generate_group_lasso_coefficients,
+)
 import group_lasso._singular_values
 import group_lasso._group_lasso
 import numpy as np
@@ -60,7 +63,9 @@ if __name__ == "__main__":
     for i in range(w.shape[1]):
         plt.figure()
         plt.plot(
-            w[:, i] / np.linalg.norm(w[:, i]), ".", label="Normalised true weights"
+            w[:, i] / np.linalg.norm(w[:, i]),
+            ".",
+            label="Normalised true weights",
         )
         plt.plot(
             gl.coef_[:, i] / np.linalg.norm(gl.coef_[:, i]),

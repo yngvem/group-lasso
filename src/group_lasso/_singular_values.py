@@ -22,11 +22,21 @@ def _subsampled_power_iteration(X, v, subsampling_scheme, random_state):
     X_ = subsample(subsampling_scheme, X, random_state=random_state)
     v, s = _power_iteration(X_, v)
 
-    return v, s / subsampling_fraction(len(X), subsampling_scheme, random_state=random_state)
+    return (
+        v,
+        s
+        / subsampling_fraction(
+            len(X), subsampling_scheme, random_state=random_state
+        ),
+    )
 
 
 def find_largest_singular_value(
-    X, random_state, subsampling_scheme=None, maxits=LIPSCHITZ_MAXITS, tol=LIPSCHITS_TOL
+    X,
+    random_state,
+    subsampling_scheme=None,
+    maxits=LIPSCHITZ_MAXITS,
+    tol=LIPSCHITS_TOL,
 ):
     """Find the largest singular value of X.
     """
@@ -35,7 +45,9 @@ def find_largest_singular_value(
     v /= s
     for i in range(maxits):
         s_ = s
-        v, s = _subsampled_power_iteration(X, v, subsampling_scheme, random_state=random_state)
+        v, s = _subsampled_power_iteration(
+            X, v, subsampling_scheme, random_state=random_state
+        )
 
         # Absolute value is necessary because of subsampling
         improvement = abs(s - s_) / max(abs(s), abs(s_))
