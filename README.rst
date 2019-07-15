@@ -233,6 +233,7 @@ Arguments
         used. Using the Frobenius approximation for the Lipschitz
         coefficient might fail, and end up with all-zero weights.
     fit_intercept : bool (default=True)
+        Whether to fit an intercept or not.
 
 
 
