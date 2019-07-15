@@ -52,7 +52,6 @@ class BaseTestGroupLasso:
 
     def test_grad(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
-        w = self.random_weights()
         eps = 1e-5
 
         for gl in self.all_configs(gl_no_reg):
@@ -93,6 +92,7 @@ class TestGroupLasso(BaseTestGroupLasso):
 
     @pytest.fixture
     def ml_problem(self):
+        np.random.seed(0)
         X = np.random.standard_normal((self.num_rows, self.num_cols))
         w = self.random_weights()
         y = X @ w
@@ -105,6 +105,7 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
 
     @pytest.fixture
     def ml_problem(self):
+        np.random.seed(0)
         X = np.random.standard_normal((self.num_rows, self.num_cols))
         w = self.random_weights()
         y = _group_lasso._sigmoid(X @ w) > 0.5
