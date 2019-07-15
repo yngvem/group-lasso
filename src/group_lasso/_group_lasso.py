@@ -228,14 +228,6 @@ class BaseGroupLasso(ABC):
         )
         self.intercept_, self.coef_ = _split_intercept(weights)
 
-        warnings.warn(
-            "The FISTA iterations did not converge to a sufficient minimum.\n"
-            f"You used subsampling then this is expected, otherwise,"
-            "try to increase the number of iterations "
-            "or decreasing the tolerance.",
-            RuntimeWarning,
-        )
-
     def _check_valid_parameters(self):
         assert all(reg >= 0 for reg in self.reg_vector)
         assert len(self.reg_vector) == len(np.unique(self.groups))
