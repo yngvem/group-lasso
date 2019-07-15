@@ -1,8 +1,9 @@
 import numpy as np
 import numpy.linalg as la
 import pytest
-from group_lasso import _group_lasso
 from sklearn.linear_model import LinearRegression, LogisticRegression
+
+from group_lasso import _group_lasso
 
 np.random.seed(0)
 
