@@ -260,6 +260,8 @@ class BaseGroupLasso(ABC):
         self._check_valid_parameters()
 
     def fit(self, X, y, lipschitz=None):
+        """Fit a group-lasso regularised linear model.
+        """
         self._init_fit(X, y)
         self._minimise_loss(X, y, lipschitz=lipschitz)
 
