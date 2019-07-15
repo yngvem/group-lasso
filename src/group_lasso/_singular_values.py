@@ -70,7 +70,7 @@ def find_largest_singular_value(
     warnings.warn(
         f"Could not find an estimate for the largest singular value of X"
         f"with the power method. \n"
-        f"Ran for {maxits:d} iterations with a tolerance of {tol:02g}"
+        f"Ran for {maxits:d} iterations with a tolerance of {tol:02g}\n"
         f'Subsampling {"is" if subsampling_scheme is not None else "is not"} used.',
         RuntimeWarning,
     )
