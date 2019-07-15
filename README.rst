@@ -13,7 +13,7 @@ Group Lasso
 
 The group lasso [1] regulariser is a well known method to achieve structured 
 sparsity in machine learning and statistics. The idea is to create 
-non-overlapping groups of covariate, and recover regression weights in which 
+non-overlapping groups of covariates, and recover regression weights in which 
 only a sparse set of these covariate groups have non-zero components.
 
 There are several reasons for why this might be a good idea. Say for example 
