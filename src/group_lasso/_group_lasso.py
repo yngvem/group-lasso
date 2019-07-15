@@ -5,7 +5,11 @@ import warnings
 
 import numpy.linalg as la
 import numpy as np
-from sklearn.utils import check_random_state, check_array, check_consistent_length
+from sklearn.utils import (
+    check_random_state,
+    check_array,
+    check_consistent_length,
+)
 
 from group_lasso._singular_values import find_largest_singular_value
 from group_lasso._subsampling import subsample

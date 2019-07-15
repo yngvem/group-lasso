@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 import numpy as np
 import numpy.linalg as la
 import pytest
@@ -67,7 +66,8 @@ class BaseTestGroupLasso:
                 )
                 print(
                     f"{dw[i, 0]:.3e}, {g[i, 0]:.3e}, {w[i, 0]:.3e}, "
-                    f"{dw[i, 0] - g[i, 0]:.3e}, {(dw[i, 0] - g[i, 0])/g[i, 0]:.3e}"
+                    f"{dw[i, 0] - g[i, 0]:.3e}, "
+                    f"{(dw[i, 0] - g[i, 0])/g[i, 0]:.3e}"
                 )
             assert np.allclose(dw, g, rtol=1e-2, atol=1e-5)
 

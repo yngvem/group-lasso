@@ -1,8 +1,7 @@
-import warnings
+from math import sqrt
 
 import numpy as np
 import numpy.linalg as la
-from math import sqrt
 
 from group_lasso._subsampling import subsample, subsampling_fraction
 
