@@ -44,7 +44,7 @@ or by manually pulling this repository and running the setup.py file::
 Example:
 --------
 The group lasso regulariser is implemented following the scikit-learn API,
-making it easy to use for those familiar with this API.
+making it easy to use for those familiar with the Python ML ecosystem.
 
 .. code-block:: python
 
