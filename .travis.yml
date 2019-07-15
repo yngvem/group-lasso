@@ -5,5 +5,8 @@ python:
 install:
   - pip install -r requirements.txt
   - pip install .
+before_script:
+  - pip install coveralls
 # command to run tests
 script: pytest
+after_success: coveralls
