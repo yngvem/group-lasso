@@ -79,7 +79,7 @@ class BaseGroupLasso(ABC):
         self,
         groups,
         reg=0.05,
-        n_iter=1000,
+        n_iter=100,
         tol=1e-5,
         subsampling_scheme=None,
         fit_intercept=True,
@@ -336,7 +336,7 @@ class GroupLasso(BaseGroupLasso):
         self,
         groups=None,
         reg=0.05,
-        n_iter=1000,
+        n_iter=100,
         tol=1e-5,
         subsampling_scheme=None,
         fit_intercept=True,
@@ -354,16 +354,16 @@ class GroupLasso(BaseGroupLasso):
             columns of the data matrix belong to the first group, the next
             two columns belong to the second group and the last column should
             not be regularised.
-        reg : float or iterable
+        reg : float or iterable (default=0.05)
             The regularisation coefficient(s). If ``reg`` is an
             iterable, then it should have the same length as
             ``groups``.
-        n_iter : int
+        n_iter : int (default=100)
             The maximum number of iterations to perform
-        tol : float
+        tol : float (default=1e-5)
             The convergence tolerance. The optimisation algorithm
             will stop once ||x_{n+1} - x_n|| < ``tol``.
-        subsampling_scheme : float, int or str
+        subsampling_scheme : None, float, int or str (default=None)
             The subsampling rate used for the gradient and singular value
             computations. If it is a float, then it specifies the fraction
             of rows to use in the computations. If it is an int, it
@@ -371,7 +371,7 @@ class GroupLasso(BaseGroupLasso):
             it is a string, then it must be 'sqrt' and the number of rows used
             in the computations is the square root of the number of rows
             in X.
-        frobenius_lipschitz : Bool [default=False]
+        frobenius_lipschitz : bool (default=False)
             Use the Frobenius norm to estimate the lipschitz coefficient of the
             MSE loss. This works well for systems whose power iterations
             converge slowly. If False, then subsampled power iterations are
