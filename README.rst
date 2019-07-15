@@ -41,6 +41,61 @@ or by manually pulling this repository and running the setup.py file::
     cd group-lasso
     python setup.py
 
+Example:
+--------
+The group lasso regulariser is implemented following the scikit-learn API,
+making it easy to use for those familiar with this API.
+
+.. code-block:: python
+
+    import numpy as np
+    from group_lasso import GroupLasso
+
+    # Dataset parameters
+    num_data_points = 10_000
+    num_features = 500
+    num_groups = 25
+    assert num_features % num_groups == 0
+
+    # Generate data matrix
+    X = np.random.standard_normal((num_data_points, num_features))
+
+    # Generate coefficients and intercept
+    w = np.random.standard_normal((500, 1))
+    intercept = 2
+
+    # Generate groups and randomly set coefficients to zero
+    groups = np.array([[group]*20 for group in range(25)]).ravel()
+    for group in range(num_groups):
+        w[groups == group] *= np.random.random() < 0.8
+    
+    # Generate target vector:
+    y = X@w + intercept
+    noise = np.random.standard_normal(y.shape)
+    noise /= np.linalg.norm(noise)
+    noise *= 0.3*np.linalg.norm(y)
+    y += noise
+
+    # Generate group lasso object and fit the model
+    gl = GroupLasso(groups=groups, reg=5e-4)
+    gl.fit(X, y)
+    estimated_w = gl.coef_
+    estimated_intercept = gl.intercept_[0]
+
+    # Evaluate the model
+    coef_correlation = np.corrcoef(w.ravel(), estimated_w.ravel())[0, 1]
+    print(f"True intercept: {intercept:.2f}. Estimated intercept: {estimated_intercept:.2f}")
+    print(f"Correlation between true and estimated coefficients: {coef_correlation:.2f}")
+    
+.. code-block::
+
+    True intercept: 2.00. Estimated intercept: 1.97
+    Correlation between true and estimated coefficients: 1.00
+
+
+
+
+
 Todos:
 ------
 The todos are, in decreasing order of importance
