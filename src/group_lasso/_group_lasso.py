@@ -51,7 +51,7 @@ class BaseGroupLasso(ABC):
     """
     This class implements the Group Lasso [1] regularisation for optimisation
     problems with Lipschitz continuous gradients, which is approximately
-    equivalent to having a bounded third derivative.
+    equivalent to having a bounded second derivative.
 
     The loss is optimised using the FISTA algorithm proposed in [2] with the
     generalised gradient-based restarting scheme proposed in [3].
