@@ -25,15 +25,15 @@ sensors, since they each generate five measurements. If we instead use group
 LASSO with measurements grouped by which sensor they were measured by, then
 we will get a sparse set of sensors.
 
--------------------
-About this project:
--------------------
+------------------
+About this project
+------------------
 This project is developed by Yngve Mardal Moe and released under an MIT 
 lisence.
 
--------------------
-Installation guide:
--------------------
+------------------
+Installation guide
+------------------
 Currently, the code only works with Python 3.6+, but I aim to 
 support Python 3.5 in the future. To install group-lasso via ``pip``,
 simply run the command::
@@ -47,12 +47,12 @@ Alternatively, you can manually pull this repository and run the
     cd group-lasso
     python setup.py
 
---------
-Example:
---------
+-------
+Example
+-------
 
-Group lasso regression:
-=======================
+Group lasso regression
+======================
 
 The group lasso regulariser is implemented following the scikit-learn API,
 making it easy to use for those familiar with the Python ML ecosystem.
@@ -181,9 +181,9 @@ Group lasso regression can also be used as a transformer
     This is very low since the regularisation is so high.
     The R^2 statistic for the pipeline is: 0.72
 
-------
-Todos:
-------
+-----------
+Furher work
+-----------
 The todos are, in decreasing order of importance
 
 1. Write a better readme
@@ -226,9 +226,9 @@ Finally, we note that since FISTA uses Nesterov acceleration, is not a
 descent algorithm. We can therefore not expect the loss to decrease 
 monotonically.
 
------------
-References:
------------
+----------
+References
+----------
 
 [1]: Yuan, M. and Lin, Y. (2006), Model selection and estimation in regression with grouped variables. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 68: 49-67. doi:10.1111/j.1467-9868.2005.00532.x
 
