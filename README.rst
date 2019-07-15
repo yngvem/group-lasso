@@ -108,6 +108,7 @@ Group lasso as a transformer
 ============================
 
 Group lasso regression can also be used as a transformer
+
 .. code-block:: python
 
     import numpy as np
