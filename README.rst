@@ -1,3 +1,4 @@
+===========
 Group Lasso
 ===========
 
@@ -24,11 +25,13 @@ sensors, since they each generate five measurements. If we instead use group
 LASSO with measurements grouped by which sensor they were measured by, then
 we will get a sparse set of sensors.
 
+-------------------
 About this project:
 -------------------
 This project is developed by Yngve Mardal Moe and released under an MIT 
 lisence.
 
+-------------------
 Installation guide:
 -------------------
 The code can either be installed via ``pip``, running the command::
@@ -41,8 +44,13 @@ or by manually pulling this repository and running the setup.py file::
     cd group-lasso
     python setup.py
 
+--------
 Example:
 --------
+
+Group lasso regression:
+=======================
+
 The group lasso regulariser is implemented following the scikit-learn API,
 making it easy to use for those familiar with the Python ML ecosystem.
 
@@ -77,7 +85,7 @@ making it easy to use for those familiar with the Python ML ecosystem.
     y += noise
 
     # Generate group lasso object and fit the model
-    gl = GroupLasso(groups=groups, reg=5e-4)
+    gl = GroupLasso(groups=groups, reg=.05)
     gl.fit(X, y)
     estimated_w = gl.coef_
     estimated_intercept = gl.intercept_[0]
@@ -89,20 +97,93 @@ making it easy to use for those familiar with the Python ML ecosystem.
     
 .. code-block::
 
-    True intercept: 2.00. Estimated intercept: 1.97
-    Correlation between true and estimated coefficients: 1.00
+    True intercept: 2.00. Estimated intercept: 1.53
+    Correlation between true and estimated coefficients: 0.98
 
 
+Group lasso as a transformer
+============================
+
+Group lasso regression can also be used as a transformer
+.. code-block:: python
+
+    import numpy as np
+    from sklearn.pipeline import Pipeline
+    from sklearn.linear_model import Ridge
+    from group_lasso import GroupLasso
+
+    # Dataset parameters
+    num_data_points = 10_000
+    num_features = 500
+    num_groups = 25
+    assert num_features % num_groups == 0
+
+    # Generate data matrix
+    X = np.random.standard_normal((num_data_points, num_features))
+
+    # Generate coefficients and intercept
+    w = np.random.standard_normal((500, 1))
+    intercept = 2
+
+    # Generate groups and randomly set coefficients to zero
+    groups = np.array([[group]*20 for group in range(25)]).ravel()
+    for group in range(num_groups):
+        w[groups == group] *= np.random.random() < 0.8
+    
+    # Generate target vector:
+    y = X@w + intercept
+    noise = np.random.standard_normal(y.shape)
+    noise /= np.linalg.norm(noise)
+    noise *= 0.3*np.linalg.norm(y)
+    y += noise
+
+    # Generate group lasso object and fit the model
+    # We use an artificially high regularisation coefficient since
+    #  we want to use group lasso as a variable selection algorithm.
+    gl = GroupLasso(groups=groups, reg=.1)
+    gl.fit(X, y)
+    new_X = gl.transform(X)
 
 
+    # Evaluate the model
+    predicted_y = gl.predict(X)
+    R_squared = 1 - np.sum((y - predicted_y)**2)/np.sum(y**2)
 
+    print("The rows with zero-valued coefficients have now been removed from the dataset.")
+    print("The new shape is:", new_X.shape)
+    print(f"The R^2 statistic for the group lasso model is: {R_squared:.2f}")
+    print("This is very low since the regularisation is so high."
+
+    # Use group lasso in a scikit-learn pipeline
+    pipe = Pipeline(
+        memory=None,
+        steps=[
+            ('variable_selection', GroupLasso(groups=groups, reg=.1)),
+            ('regressor', Ridge(alpha=0.1))
+        ]
+    )
+    pipe.fit(X, y)
+    predicted_y = pipe.predict(X)
+    R_squared = 1 - np.sum((y - predicted_y)**2)/np.sum(y**2)
+
+    print(f"The R^2 statistic for the pipeline is: {R_squared:.2f}")
+
+    
+.. code-block::
+
+    The rows with zero-valued coefficients have now been removed from the dataset.
+    The new shape is: (10000, 280)
+    The R^2 statistic for the group lasso model is: 0.17
+    This is very low since the regularisation is so high.
+    The R^2 statistic for the pipeline is: 0.72
+
+------
 Todos:
 ------
 The todos are, in decreasing order of importance
 
 1. Write a better readme
 
-   - Code examples
    - Better description of Group LASSO
 
 2. Write more docstrings
@@ -117,6 +198,7 @@ The todos are, in decreasing order of importance
 Unfortunately, the most interesting parts are the least important ones, so 
 expect the list to be worked on from both ends simultaneously.
 
+----------------------
 Implementation details
 ----------------------
 The problem is solved using the FISTA optimiser [2] with a gradient-based 
@@ -140,8 +222,9 @@ Finally, we note that since FISTA uses Nesterov acceleration, is not a
 descent algorithm. We can therefore not expect the loss to decrease 
 monotonically.
 
-References
-----------
+-----------
+References:
+-----------
 
 [1]: Yuan, M. and Lin, Y. (2006), Model selection and estimation in regression with grouped variables. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 68: 49-67. doi:10.1111/j.1467-9868.2005.00532.x
 
