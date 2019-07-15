@@ -34,11 +34,14 @@ lisence.
 -------------------
 Installation guide:
 -------------------
-The code can either be installed via ``pip``, running the command::
+Currently, the code only works with Python 3.6+, but I aim to 
+support Python 3.5 in the future. To install group-lasso via ``pip``,
+simply run the command::
 
     pip install group-lasso
 
-or by manually pulling this repository and running the setup.py file::
+Alternatively, you can manually pull this repository and run the
+``setup.py`` file::
 
     git clone https://github.com/yngvem/group-lasso.git
     cd group-lasso
