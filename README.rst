@@ -181,6 +181,61 @@ Group lasso regression can also be used as a transformer
     This is very low since the regularisation is so high.
     The R^2 statistic for the pipeline is: 0.72
 
+
+---
+API
+---
+The class is modelled after the scikit-learn API and should seamlessly integrate
+with the Python ML ecosystem. There is currently one supported class, the
+``GroupLasso`` class. However, the experimental ``LogisticGroupLasso`` class is
+also readily available.
+
+The ``GroupLasso`` class implements group lasso regularised linear regression
+with a mean squared error penalty function. Likewise, the experimental 
+``LogisticGroupLasso`` implements one-class logistic regression with a sigmoidal
+non-linearity function and cross entropy loss. 
+
+GroupLasso
+==========
+The ``GroupLasso`` class has one mandatory and several optional arguments.
+
+Arguments
+---------
+groups : Iterable
+    Iterable that specifies which group each column corresponds to.
+    For columns that should not be regularised, the corresponding
+    group index should either be None or negative. For example, the
+    list ``[1, 1, 1, 2, 2, -1]`` specifies that the first three
+    columns of the data matrix belong to the first group, the next
+    two columns belong to the second group and the last column should
+    not be regularised.
+reg : float or iterable (default=0.05)
+    The regularisation coefficient(s). If ``reg`` is an
+    iterable, then it should have the same length as
+    ``groups``.
+n_iter : int (default=100)
+    The maximum number of iterations to perform
+tol : float (default=1e-5)
+    The convergence tolerance. The optimisation algorithm
+    will stop once ||x_{n+1} - x_n|| < ``tol``.
+subsampling_scheme : None, float, int or str (default=None)
+    The subsampling rate used for the gradient and singular value
+    computations. If it is a float, then it specifies the fraction
+    of rows to use in the computations. If it is an int, it
+    specifies the number of rows to use in the computation and if
+    it is a string, then it must be 'sqrt' and the number of rows used
+    in the computations is the square root of the number of rows
+    in X.
+frobenius_lipschitz : bool (default=False)
+    Use the Frobenius norm to estimate the lipschitz coefficient of the
+    MSE loss. This works well for systems whose power iterations
+    converge slowly. If False, then subsampled power iterations are
+    used. Using the Frobenius approximation for the Lipschitz
+    coefficient might fail, and end up with all-zero weights.
+fit_intercept : bool (default=True)
+
+
+
 -----------
 Furher work
 -----------
@@ -191,12 +246,13 @@ The todos are, in decreasing order of importance
    - Better description of Group LASSO
 
 2. Write more docstrings
-3. Python 3.5 compatibility
-4. Better ScikitLearn compatibility
+3. Sphinx documentation
+4. Python 3.5 compatibility
+5. Better ScikitLearn compatibility
 
    - Use Mixins?
 
-5. Classification problems
+6. Classification problems
 
    - I have an experimental implementation one-class logistic regression, 
      but it is not yet fully validated.
