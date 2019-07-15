@@ -2,7 +2,9 @@
 """
 
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
+__author__ = "Yngve Mardal Moe"
+__email__ = "yngve.m.moe@gmail.com"
 
 
 from group_lasso._group_lasso import GroupLasso, LogisticGroupLasso
