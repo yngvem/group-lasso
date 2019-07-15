@@ -243,6 +243,8 @@ class BaseGroupLasso(ABC):
         return X, y
 
     def _init_fit(self, X, y):
+        """Initialise model and check inputs.
+        """
         X, y = self._prepare_dataset(X, y)
         groups = np.array([-1 if i is None else i for i in self.groups])
         self.random_state_ = check_random_state(self.random_state)
