@@ -69,7 +69,7 @@ class BaseTestGroupLasso:
                     f"{dw[i, 0]:.3e}, {g[i, 0]:.3e}, {w[i, 0]:.3e}, "
                     f"{dw[i, 0] - g[i, 0]:.3e}, {(dw[i, 0] - g[i, 0])/g[i, 0]:.3e}"
                 )
-                assert abs((dw[i] - g[i])) / abs(g[i]) < 1e-2
+                assert abs((dw[i] - g[i])) / abs(0.5*g[i] + 0.5*dw[i] + 1e-16) < 1e-2
 
     def test_unregularised_fit_equal_sklearn(
         self, gl_no_reg, sklearn_no_reg, ml_problem
