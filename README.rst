@@ -46,7 +46,6 @@ The todos are, in decreasing order of importance
 1. Write a better readme
 
    - Code examples
-   - Installation guide (after point 2.)
    - Better description of Group LASSO
 
 2. Write more docstrings
@@ -55,7 +54,7 @@ The todos are, in decreasing order of importance
 
    - Use Mixins?
 
-5. Classification problems (I have an experimental implementation, but it's not tested yet)
+5. Classification problems (I have an experimental implementation, but it's not validated yet)
 
 Unfortunately, the most interesting parts are the least important ones, so expect the list
 to be worked on from both ends simultaneously.
