@@ -77,7 +77,7 @@ class BaseGroupLasso(ABC):
 
     def __init__(
         self,
-        groups=None,
+        groups,
         reg=0.05,
         n_iter=1000,
         tol=1e-5,
