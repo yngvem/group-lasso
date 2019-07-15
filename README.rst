@@ -1,6 +1,15 @@
 Group Lasso
 ===========
 
+.. image:: https://coveralls.io/repos/github/yngvem/group-lasso/badge.svg
+    :target: https://coveralls.io/github/yngvem/group-lasso
+
+.. image:: https://travis-ci.org/yngvem/group-lasso.svg?branch=master
+    :target: https://github.com/yngvem/group-lasso
+
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/python/black
+
 The group lasso [1] regulariser is a well known method to achieve structured sparsity
 in machine learning and statistics. The idea is to create non-overlapping groups of
 covariate, and recover regression weights in which only a sparse set of these covariate
@@ -37,7 +46,6 @@ The todos are, in decreasing order of importance
 1. Write a better readme
 
    - Code examples
-   - Installation guide (after point 2.)
    - Better description of Group LASSO
 
 2. Write more docstrings
@@ -46,7 +54,7 @@ The todos are, in decreasing order of importance
 
    - Use Mixins?
 
-5. Classification problems (I have an experimental implementation, but it's not tested yet)
+5. Classification problems (I have an experimental implementation, but it's not validated yet)
 
 Unfortunately, the most interesting parts are the least important ones, so expect the list
 to be worked on from both ends simultaneously.
