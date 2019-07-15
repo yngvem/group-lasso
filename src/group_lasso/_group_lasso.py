@@ -5,7 +5,7 @@ import warnings
 
 import numpy.linalg as la
 import numpy as np
-from sklearn.utils import check_random_state, check_X_y
+from sklearn.utils import check_random_state, check_array, check_consistent_length
 
 from group_lasso._singular_values import find_largest_singular_value
 from group_lasso._subsampling import subsample
@@ -239,7 +239,9 @@ class BaseGroupLasso(ABC):
         assert self.tol >= 0
 
     def _prepare_dataset(self, X, y):
-        check_X_y(X, y)
+        check_consistent_length(X, y)
+        check_array(X)
+        check_array(y)
         if len(y.shape) == 1:
             y = y.reshape(-1, 1)
         return X, y
