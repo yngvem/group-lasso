@@ -6,7 +6,7 @@ import numpy as np
 @pytest.fixture
 def row_lengths():
     def _row_lengths():
-        for i in range(20):
+        for i in range(2, 20):
             yield 2 ** i - 1
 
     return _row_lengths
