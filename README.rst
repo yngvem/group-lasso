@@ -47,9 +47,9 @@ Alternatively, you can manually pull this repository and run the
     cd group-lasso
     python setup.py
 
--------
-Example
--------
+--------
+Examples
+--------
 
 Group lasso regression
 ======================
