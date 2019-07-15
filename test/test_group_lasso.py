@@ -15,7 +15,6 @@ class BaseTestGroupLasso:
     num_cols = 30
     configs = [{"n_iter": 1000}]
 
-    @contextmanager
     def all_configs(self, gl):
         for config in self.configs:
             gl.set_params(**config, tol=0)
@@ -39,7 +38,7 @@ class BaseTestGroupLasso:
     def test_lipschits(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
 
-        with self.all_configs(gl_no_reg) as gl:
+        for gl in self.all_configs(gl_no_reg):
             gl._init_fit(X, y)
             L = gl._compute_lipschitz(X, y)
 
@@ -56,7 +55,7 @@ class BaseTestGroupLasso:
         w = self.random_weights()
         eps = 1e-5
 
-        with self.all_configs(gl_no_reg) as gl:
+        for gl in self.all_configs(gl_no_reg):
             gl._init_fit(X, y)
             loss = gl._unregularised_loss(X, y, w)
             dw = np.empty_like(w)
@@ -74,7 +73,7 @@ class BaseTestGroupLasso:
         self, gl_no_reg, sklearn_no_reg, ml_problem
     ):
         X, y, w = ml_problem
-        with self.all_configs(gl_no_reg) as gl:
+        for gl in self.all_configs(gl_no_reg):
             yhat1 = gl.fit_predict(X, y)
             sklearn_no_reg.fit(X, y)
             yhat2 = sklearn_no_reg.predict(X).reshape(yhat1.shape)
@@ -111,7 +110,7 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
         self, gl_no_reg, sklearn_no_reg, ml_problem
     ):
         X, y, w = ml_problem
-        with self.all_configs(gl_no_reg) as gl:
+        for gl in self.all_configs(gl_no_reg):
             yhat1 = gl.fit_predict(X, y)
             sklearn_no_reg.fit(X, y)
             yhat2 = sklearn_no_reg.predict(X)
