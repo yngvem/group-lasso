@@ -1,6 +1,15 @@
 Group Lasso
 ===========
 
+.. image:: https://coveralls.io/repos/github/yngvem/group-lasso/badge.svg
+    :target: https://coveralls.io/github/yngvem/group-lasso
+
+.. image:: https://travis-ci.org/yngvem/group-lasso.svg?branch=master
+    :target: https://github.com/yngvem/group-lasso
+
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/python/black
+
 The group lasso [1] regulariser is a well known method to achieve structured sparsity
 in machine learning and statistics. The idea is to create non-overlapping groups of
 covariate, and recover regression weights in which only a sparse set of these covariate
