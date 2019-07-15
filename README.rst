@@ -199,7 +199,7 @@ The todos are, in decreasing order of importance
 5. Classification problems
 
    - I have an experimental implementation one-class logistic regression, 
-   but it is not yet fully validated.
+     but it is not yet fully validated.
 
 Unfortunately, the most interesting parts are the least important ones, so 
 expect the list to be worked on from both ends simultaneously.
