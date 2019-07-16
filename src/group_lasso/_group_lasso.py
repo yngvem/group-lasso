@@ -10,6 +10,12 @@ from sklearn.utils import (
     check_array,
     check_consistent_length,
 )
+from sklearn.base import (
+    BaseEstimator,
+    TransformerMixin,
+    RegressorMixin,
+    ClassifierMixin,
+)
 
 from group_lasso._singular_values import find_largest_singular_value
 from group_lasso._subsampling import subsample
@@ -51,7 +57,7 @@ def _add_intercept_col(X):
     return np.concatenate([ones, X], axis=1)
 
 
-class BaseGroupLasso(ABC):
+class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     """
     This class implements the Group Lasso [1] regularisation for optimisation
     problems with Lipschitz continuous gradients, which is approximately
@@ -125,20 +131,6 @@ class BaseGroupLasso(ABC):
         self.subsampling_scheme = subsampling_scheme
         self.fit_intercept = fit_intercept
         self.random_state = random_state
-
-    def get_params(self, deep=True):
-        return {
-            "groups": self.groups,
-            "reg": self.reg,
-            "n_iter": self.n_iter,
-            "tol": self.tol,
-            "subsampling_scheme": self.subsampling_scheme,
-        }
-
-    def set_params(self, **parameters):
-        for parameter, value in parameters.items():
-            setattr(self, parameter, value)
-        return self
 
     def _regularizer(self, w):
         regularizer = 0
@@ -302,7 +294,7 @@ def _l2_grad(A, b, x):
     return A.T @ (A @ x - b)
 
 
-class GroupLasso(BaseGroupLasso):
+class GroupLasso(BaseGroupLasso, RegressorMixin):
     """
     This class implements the Group Lasso [1] regularisation for linear
     regression with the mean squared penalty.
@@ -433,7 +425,7 @@ def _logistic_cross_entropy(X, y, w):
     return -(y * np.log(p) + (1 - y) * np.log(1 - p))
 
 
-class LogisticGroupLasso(BaseGroupLasso):
+class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
     """WARNING: Experimental.
     """
 
