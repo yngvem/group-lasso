@@ -2,9 +2,6 @@
 Group Lasso
 ===========
 
-.. image:: https://img.shields.io/pypi/l/group-lasso.svg
-    :target: https://github.com/yngvem/group-lasso/blob/master/LICENSE
-
 .. image:: https://coveralls.io/repos/github/yngvem/group-lasso/badge.svg
     :target: https://coveralls.io/github/yngvem/group-lasso
 
@@ -13,6 +10,9 @@ Group Lasso
 
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/python/black
+
+.. image:: https://img.shields.io/pypi/l/group-lasso.svg
+    :target: https://github.com/yngvem/group-lasso/blob/master/LICENSE
 
 The group lasso [1] regulariser is a well known method to achieve structured 
 sparsity in machine learning and statistics. The idea is to create 
