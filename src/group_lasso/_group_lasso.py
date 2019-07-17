@@ -78,8 +78,8 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     """
 
     # TODO: Document code
-    # TODO: Use sklean mixins?
-    # TODO: Tests
+
+    LOG_LOSSES = False
 
     def __init__(
         self,
@@ -103,16 +103,16 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             columns of the data matrix belong to the first group, the next
             two columns belong to the second group and the last column should
             not be regularised.
-        reg : float or iterable
+        reg : float or iterable (default=0.05)
             The regularisation coefficient(s). If ``reg`` is an
             iterable, then it should have the same length as
             ``groups``.
-        n_iter : int
+        n_iter : int (default=100)
             The maximum number of iterations to perform
-        tol : float
+        tol : float (default=1e-5)
             The convergence tolerance. The optimisation algorithm
             will stop once ||x_{n+1} - x_n|| < ``tol``.
-        subsampling_scheme : float, int or str
+        subsampling_scheme : None, float, int or str (default=None)
             The subsampling rate used for the gradient and singular value
             computations. If it is a float, then it specifies the fraction
             of rows to use in the computations. If it is an int, it
@@ -120,8 +120,15 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             it is a string, then it must be 'sqrt' and the number of rows used
             in the computations is the square root of the number of rows
             in X.
+        frobenius_lipschitz : bool (default=False)
+            Use the Frobenius norm to estimate the lipschitz coefficient of the
+            MSE loss. This works well for systems whose power iterations
+            converge slowly. If False, then subsampled power iterations are
+            used. Using the Frobenius approximation for the Lipschitz
+            coefficient might fail, and end up with all-zero weights.
         fit_intercept : bool (default=True)
-        random_state : np.random.RandomState
+            Whether to fit an intercept or not.
+        random_state : np.random.RandomState (default=None)
             The random state used for initialisation of parameters.
         """
         self.groups = groups
@@ -133,6 +140,8 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         self.random_state = random_state
 
     def _regularizer(self, w):
+        """The regularisation penalty for a given coefficient vector, ``w``.
+        """
         regularizer = 0
         b, w = _split_intercept(w)
         for group, reg in zip(self.groups_, self.reg_vector):
@@ -140,26 +149,62 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         return regularizer
 
     def _get_reg_vector(self, reg):
+        """Get the group-wise regularisation coefficients from ``reg``.
+        """
         if isinstance(reg, Number):
-            return [reg * sqrt(group.sum()) for group in self.groups_]
+            reg = [reg * sqrt(group.sum()) for group in self.groups_]
+        else:
+            reg = list(reg)
         return reg
 
     @abstractmethod
     def _unregularised_loss(self, X, y, w):
+        """The unregularised reconstruction loss.
+        """
         pass
 
     def _loss(self, X, y, w):
+        """The group-lasso regularised loss.
+
+        Arguments
+        ---------
+        X : np.ndarray
+            Data matrix, ``X.shape == (num_datapoints, num_features)``
+        y : np.ndarray
+            Target vector/matrix, ``y.shape == (num_datapoints, num_targets)``,
+            or ``y.shape == (num_datapoints,)``
+        w : np.ndarray
+            Coefficient vector, ``w.shape == (num_features, num_targets)``,
+            or ``w.shape == (num_features,)``
+        """
         return self._unregularised_loss(X, y, w) + self._regularizer(w)
 
     def loss(self, X, y):
+        """The group-lasso regularised loss with the current coefficients
+
+        Arguments
+        ---------
+        X : np.ndarray
+            Data matrix, ``X.shape == (num_datapoints, num_features)``
+        y : np.ndarray
+            Target vector/matrix, ``y.shape == (num_datapoints, num_targets)``,
+            or ``y.shape == (num_datapoints,)``
+        """
         return self._loss(X, y, self.coef_)
 
     @abstractmethod
     def _compute_lipschitz(self, X, y):
+        """Compute Lipschitz bound for the gradient of the unregularised loss.
+
+        The Lipschitz bound is with respect to the coefficient vector or 
+        matrix.
+        """
         pass
 
     @abstractmethod
     def _grad(self, X, y, w):
+        """Compute the gradient of the unregularised loss wrt the coefficients.
+        """
         pass
 
     def _minimise_loss(self, X, y, lipschitz=None):
@@ -194,7 +239,8 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             w = x
             previous_w = previous_x
 
-            self.losses_.append(self._loss(X_, y_, w))
+            if self.LOG_LOSSES:
+                self.losses_.append(self._loss(X_, y_, w))
 
             if previous_w is None and _DEBUG:
                 print(f"Starting FISTA: ")
@@ -221,12 +267,16 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         self.intercept_, self.coef_ = _split_intercept(weights)
 
     def _check_valid_parameters(self):
+        """Check that the input parameters are valid.
+        """
         assert all(reg >= 0 for reg in self.reg_vector)
         assert len(self.reg_vector) == len(np.unique(self.groups))
         assert self.n_iter > 0
         assert self.tol >= 0
 
     def _prepare_dataset(self, X, y):
+        """Ensure that the inputs are valid and prepare them for fit.
+        """
         check_consistent_length(X, y)
         check_array(X)
         check_array(y)
@@ -267,6 +317,8 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
     @property
     def sparsity_mask(self):
+        """A boolean mask indicating whether features are used in prediction.
+        """
         pattern = np.zeros(len(self.coef_), dtype=bool)
         for group in self.groups_:
             pattern[group] = not np.allclose(
@@ -276,13 +328,19 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         return pattern
 
     def transform(self, X):
+        """Remove columns corresponding to zero-valued coefficients.
+        """
         return X[:, self.sparsity_mask]
 
     def fit_transform(self, X, y, lipschitz=None):
+        """Fit a group lasso model to X and y and remove unused columns from X
+        """
         self.fit(X, y, lipschitz)
         return self.transform(X)
 
     def subsample(self, *args):
+        """Subsample the input using this class's subsampling scheme.
+        """
         return subsample(
             self.subsampling_scheme, random_state=self.random_state_, *args
         )
@@ -333,11 +391,10 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         subsampling_scheme=None,
         fit_intercept=True,
         frobenius_lipschitz=False,
+        random_state=None,
     ):
         """
 
-        Arguments
-        ---------
         groups : Iterable
             Iterable that specifies which group each column corresponds to.
             For columns that should not be regularised, the corresponding
@@ -370,6 +427,9 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
             used. Using the Frobenius approximation for the Lipschitz
             coefficient might fail, and end up with all-zero weights.
         fit_intercept : bool (default=True)
+            Whether to fit an intercept or not.
+        random_state : np.random.RandomState (default=None)
+            The random state used for initialisation of parameters.
         """
         super().__init__(
             groups=groups,
@@ -378,6 +438,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
             tol=tol,
             subsampling_scheme=subsampling_scheme,
             fit_intercept=fit_intercept,
+            random_state=random_state,
         )
         self.frobenius_lipchitz = frobenius_lipschitz
 
