@@ -2,7 +2,7 @@
 Group Lasso
 ===========
 
-.. image:: https://img.shields.io/pypi/dm/group-lasso.svg
+.. image:: https://img.shields.io/pypi/l/group-lasso.svg
     :target: https://github.com/yngvem/group-lasso/blob/master/LICENSE
 
 .. image:: https://coveralls.io/repos/github/yngvem/group-lasso/badge.svg
