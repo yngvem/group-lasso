@@ -10,7 +10,9 @@ setup(
     name="group-lasso",
     version="0.1.3",
     license="MIT",
-    description="Fast group lasso regularised linear models in a sklearn-style API.",
+    description=(
+        "Fast group lasso regularised linear models in a sklearn-style API."
+    ),
     long_description=long_description,
     author="Yngve Mardal Moe",
     author_email="yngve.m.moe@gmail.com",
