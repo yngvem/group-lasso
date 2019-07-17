@@ -395,6 +395,8 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
     ):
         """
 
+        Arguments
+        ---------
         groups : Iterable
             Iterable that specifies which group each column corresponds to.
             For columns that should not be regularised, the corresponding
