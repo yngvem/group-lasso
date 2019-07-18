@@ -68,10 +68,12 @@ API design
 ----------
 
 The ``group-lasso`` python library is modelled after the ``scikit-learn`` API
-and should be fully compliant with the ``scikit-learn`` ecosystem. As a
-consequence of this, the ``group-lasso`` library depends on ``numpy``,
-``scipy`` and ``scikit-learn``.
+and should be fully compliant with the ``scikit-learn`` ecosystem.
+Consequently, the ``group-lasso`` library depends on ``numpy``, ``scipy``
+and ``scikit-learn``.
 
+To use the group lasso implementation provided by this library, you must
+import ``GroupLasso`` from ``group_lasso``. The ``GroupLasso`` cl
 
 have weather data forecasted for several different cities in Norway
 and wish to predict the amount of fruit that we should supply
