@@ -59,22 +59,24 @@ def _add_intercept_col(X):
 
 class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     """
-    This class implements the Group Lasso [1] regularisation for optimisation
+    This class implements the Group Lasso [1]_ regularisation for optimisation
     problems with Lipschitz continuous gradients, which is approximately
     equivalent to having a bounded second derivative.
 
-    The loss is optimised using the FISTA algorithm proposed in [2] with the
-    generalised gradient-based restarting scheme proposed in [3].
+    The loss is optimised using the FISTA algorithm proposed in [2]_ with the
+    generalised gradient-based restarting scheme proposed in [3]_.
 
-    [1]: Yuan M, Lin Y. Model selection and estimation in regression with
-         grouped variables. Journal of the Royal Statistical Society: Series B
-         (Statistical Methodology). 2006 Feb;68(1):49-67.
-    [2]: Beck A, Teboulle M. A fast iterative shrinkage-thresholding algorithm
-         for linear inverse problems. SIAM journal on imaging sciences.
-         2009 Mar 4;2(1):183-202.
-    [3]: O’Donoghue B, Candes E. Adaptive restart for accelerated gradient
-         schemes. Foundations of computational mathematics.
-         2015 Jun 1;15(3):715-32.
+    References
+    ----------
+    .. [1] Yuan M, Lin Y. Model selection and estimation in regression with
+       grouped variables. Journal of the Royal Statistical Society: Series B
+       (Statistical Methodology). 2006 Feb;68(1):49-67.
+    .. [2] Beck A, Teboulle M. A fast iterative shrinkage-thresholding algorithm
+       for linear inverse problems. SIAM journal on imaging sciences.
+       2009 Mar 4;2(1):183-202.
+    .. [3] O’Donoghue B, Candes E. Adaptive restart for accelerated gradient
+       schemes. Foundations of computational mathematics.
+       2015 Jun 1;15(3):715-32.
     """
 
     # TODO: Document code
@@ -103,16 +105,16 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             columns of the data matrix belong to the first group, the next
             two columns belong to the second group and the last column should
             not be regularised.
-        reg : float or iterable (default=0.05)
+        reg : float or iterable [default=0.05]
             The regularisation coefficient(s). If ``reg`` is an
             iterable, then it should have the same length as
             ``groups``.
-        n_iter : int (default=100)
+        n_iter : int [default=100]
             The maximum number of iterations to perform
-        tol : float (default=1e-5)
+        tol : float [default=1e-5]
             The convergence tolerance. The optimisation algorithm
             will stop once ||x_{n+1} - x_n|| < ``tol``.
-        subsampling_scheme : None, float, int or str (default=None)
+        subsampling_scheme : None, float, int or str [default=None]
             The subsampling rate used for the gradient and singular value
             computations. If it is a float, then it specifies the fraction
             of rows to use in the computations. If it is an int, it
@@ -120,15 +122,15 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             it is a string, then it must be 'sqrt' and the number of rows used
             in the computations is the square root of the number of rows
             in X.
-        frobenius_lipschitz : bool (default=False)
+        frobenius_lipschitz : bool [default=False]
             Use the Frobenius norm to estimate the lipschitz coefficient of the
             MSE loss. This works well for systems whose power iterations
             converge slowly. If False, then subsampled power iterations are
             used. Using the Frobenius approximation for the Lipschitz
             coefficient might fail, and end up with all-zero weights.
-        fit_intercept : bool (default=True)
+        fit_intercept : bool [default=True]
             Whether to fit an intercept or not.
-        random_state : np.random.RandomState (default=None)
+        random_state : np.random.RandomState [default=None]
             The random state used for initialisation of parameters.
         """
         self.groups = groups
@@ -309,6 +311,8 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
     @abstractmethod
     def predict(self, X):
+        """Predict using the linear model.
+        """
         pass
 
     def fit_predict(self, X, y):
@@ -354,15 +358,15 @@ def _l2_grad(A, b, x):
 
 class GroupLasso(BaseGroupLasso, RegressorMixin):
     """
-    This class implements the Group Lasso [1] regularisation for linear
+    This class implements the Group Lasso [1]_ regularisation for linear
     regression with the mean squared penalty.
 
     This class is implemented as both a regressor and a transformation.
     If the ``transform`` method is called, then the columns of the input
     that correspond to zero-valued regression coefficients are dropped.
 
-    The loss is optimised using the FISTA algorithm proposed in [2] with the
-    generalised gradient-based restarting scheme proposed in [3]. This
+    The loss is optimised using the FISTA algorithm proposed in [2]_ with the
+    generalised gradient-based restarting scheme proposed in [3]_. This
     algorithm is not as accurate as a few other optimisation algorithms,
     but it is extremely efficient and does recover the sparsity patterns.
     We therefore reccomend that this class is used as a transformer to select
@@ -371,15 +375,17 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
 
     References
     ----------
-    [1]: Yuan M, Lin Y. Model selection and estimation in regression with
-         grouped variables. Journal of the Royal Statistical Society: Series B
-         (Statistical Methodology). 2006 Feb;68(1):49-67.
-    [2]: Beck A, Teboulle M. A fast iterative shrinkage-thresholding algorithm
-         for linear inverse problems. SIAM journal on imaging sciences.
-         2009 Mar 4;2(1):183-202.
-    [3]: O’donoghue B, Candes E. Adaptive restart for accelerated gradient
-         schemes. Foundations of computational mathematics.
-         2015 Jun 1;15(3):715-32.
+    .. [1] Yuan M, Lin Y. Model selection and estimation in regression with
+       grouped variables. Journal of the Royal Statistical Society: Series B
+       (Statistical Methodology). 2006 Feb;68(1):49-67.
+
+    .. [2] Beck A, Teboulle M. A fast iterative shrinkage-thresholding 
+       algorithm for linear inverse problems. SIAM journal on imaging 
+       sciences. 2009 Mar 4;2(1):183-202.
+
+    .. [3] O’donoghue B, Candes E. Adaptive restart for accelerated gradient
+       schemes. Foundations of computational mathematics.
+       2015 Jun 1;15(3):715-32.
     """
 
     def __init__(
@@ -405,16 +411,16 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
             columns of the data matrix belong to the first group, the next
             two columns belong to the second group and the last column should
             not be regularised.
-        reg : float or iterable (default=0.05)
+        reg : float or iterable [default=0.05]
             The regularisation coefficient(s). If ``reg`` is an
             iterable, then it should have the same length as
             ``groups``.
-        n_iter : int (default=100)
+        n_iter : int [default=100]
             The maximum number of iterations to perform
-        tol : float (default=1e-5)
+        tol : float [default=1e-5]
             The convergence tolerance. The optimisation algorithm
             will stop once ||x_{n+1} - x_n|| < ``tol``.
-        subsampling_scheme : None, float, int or str (default=None)
+        subsampling_scheme : None, float, int or str [default=None]
             The subsampling rate used for the gradient and singular value
             computations. If it is a float, then it specifies the fraction
             of rows to use in the computations. If it is an int, it
@@ -422,15 +428,15 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
             it is a string, then it must be 'sqrt' and the number of rows used
             in the computations is the square root of the number of rows
             in X.
-        frobenius_lipschitz : bool (default=False)
+        frobenius_lipschitz : bool [default=False]
             Use the Frobenius norm to estimate the lipschitz coefficient of the
             MSE loss. This works well for systems whose power iterations
             converge slowly. If False, then subsampled power iterations are
             used. Using the Frobenius approximation for the Lipschitz
             coefficient might fail, and end up with all-zero weights.
-        fit_intercept : bool (default=True)
+        fit_intercept : bool [default=True]
             Whether to fit an intercept or not.
-        random_state : np.random.RandomState (default=None)
+        random_state : np.random.RandomState [default=None]
             The random state used for initialisation of parameters.
         """
         super().__init__(
@@ -444,7 +450,24 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         )
         self.frobenius_lipchitz = frobenius_lipschitz
 
+    def fit(X, y, lipschitz=None):
+        """Fit a group lasso regularised linear regression model.
+
+        Arguments
+        ---------
+        X : np.ndarray
+            Data matrix
+        y : np.ndarray
+            Target vector or matrix
+        lipschitz : float or None [default=None]
+            A Lipshitz bound for the mean squared loss with the given
+            data and target matrices. If None, this is estimated.
+        """
+        super().fit(X, y, lipschitz=lipschitz)
+
     def predict(self, X):
+        """Predict using the linear model.
+        """
         return self.intercept_ + X @ self.coef_
 
     def _unregularised_loss(self, X, y, w):
@@ -511,6 +534,8 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         return _logistic_proba(X, self.coef_)
 
     def predict(self, X):
+        """Predict using the linear model.
+        """
         return self.predict_proba(X) >= 0.5
 
     def fit(self, X, y, lipschitz=None):
