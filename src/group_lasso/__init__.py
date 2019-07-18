@@ -7,4 +7,6 @@ __author__ = "Yngve Mardal Moe"
 __email__ = "yngve.m.moe@gmail.com"
 
 
-from group_lasso._group_lasso import GroupLasso, LogisticGroupLasso
+from group_lasso._group_lasso import (
+    GroupLasso, LogisticGroupLasso, BaseGroupLasso
+)

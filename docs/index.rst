@@ -1,8 +1,3 @@
-.. Group Lasso documentation master file, created by
-   sphinx-quickstart on Wed Jul 17 15:12:11 2019.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Efficient Group Lasso in Python
 ===============================
 
@@ -59,8 +54,8 @@ groups to have zero-valued regression coefficients. Later, it has been popular
 to use this methodology to regularise other machine learning algorithms, such
 as logistic regression. The "only" thing neccesary to do this is to exchange
 the squared norm term, :math:`|| \sum_{g \in \mathcal{G}} \left[\mathbf{X}_g\mathbf{\beta}_g\right] - \mathbf{y} ||_2^2`,
-with a general loss term, :math: `L(\mathbf{beta}; \mathbf{X}, \mathbf{y})`,
-where :math:`\mathbf{beta}` and :math:`\mathbf{X}` is the concatenation
+with a general loss term, :math:`L(\mathbf{\beta}; \mathbf{X}, \mathbf{y})`,
+where :math:`\mathbf{\beta}` and :math:`\mathbf{X}` is the concatenation
 of all group coefficients and group data matrices, respectively.
 
 
@@ -72,31 +67,38 @@ and should be fully compliant with the ``scikit-learn`` ecosystem.
 Consequently, the ``group-lasso`` library depends on ``numpy``, ``scipy``
 and ``scikit-learn``.
 
-To use the group lasso implementation provided by this library, you must
-import ``GroupLasso`` from ``group_lasso``. The ``GroupLasso`` cl
+Currently, the only supported algorithm is group-lasso regularised linear
+and multiple regression, which is available in the ``group_lasso.GroupLasso``
+class. However, I am working on an experimental class with group lasso
+regularised logistic regression, which is available in the 
+``group_lasso.LogisticGroupLasso`` class. Currently, this class only supports
+binary classification problems through a sigmoidal transformation, but
+I am working on a multiple classification algorithm with the softmax
+transformation.
 
-have weather data forecasted for several different cities in Norway
-and wish to predict the amount of fruit that we should supply
-Say we have gene expression data and wish to find a relationship between
-certain biological pathways and a specific kind of cancer. Each biological
-pathway is represented by a unique set of genes and each gene is only part
-of a single pathway
+All classes in this library is implemented as both ``scikit-learn``
+transformers and their regressors or classifiers (dependent on their
+use case). The reason for this is that to use lasso based models for
+variable selection, the regularisation coefficient should be quite high,
+resulting in sub-par performance on the actual task of interest. Therefore,
+it is common to first use a lasso-like algorithm to select the relevant
+features before using another another algorithm (say ridge regression)
+for the task at hand. Therefore, the ``transform`` method of
+``group_lasso.GroupLasso`` to remove the columns of the input dataset
+corresponding to zero-valued coefficients.
 
-Group lasso [1]_ is a regularisation technique often used in machine learning
-to achieve group-wise sparsity of coefficients. Thus, it is useful when our
-data naturally form group of covariates. These groups can be sensor locations,
-biological function of genes, etc. 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+   
+   installation
+   examples
+   maths
+   api_reference
+   
 
-.. autoclass:: group_lasso.GroupLasso
-    :members: __init__, fit, predict, transform, score
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+References
+----------
+.. [1] Yuan M, Lin Y. Model selection and estimation in regression with
+    grouped variables. Journal of the Royal Statistical Society: Series B
+    (Statistical Methodology). 2006 Feb;68(1):49-67.
