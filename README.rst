@@ -243,11 +243,7 @@ Furher work
 The todos are, in decreasing order of importance
 
 1. Python 3.5 compatibility
-2. Better ScikitLearn compatibility
-
-   - Use Mixins?
-
-3. Classification problems
+2. Classification problems
 
    - I have an experimental implementation one-class logistic regression, 
      but it is not yet fully validated.
