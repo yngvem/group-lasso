@@ -242,18 +242,12 @@ Furher work
 -----------
 The todos are, in decreasing order of importance
 
-1. Write a better readme
-
-   - Better description of Group LASSO
-
-2. Write more docstrings
-3. Sphinx documentation
-4. Python 3.5 compatibility
-5. Better ScikitLearn compatibility
+1. Python 3.5 compatibility
+2. Better ScikitLearn compatibility
 
    - Use Mixins?
 
-6. Classification problems
+3. Classification problems
 
    - I have an experimental implementation one-class logistic regression, 
      but it is not yet fully validated.
