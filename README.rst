@@ -11,6 +11,9 @@ Group Lasso
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/python/black
 
+.. image:: https://img.shields.io/pypi/l/group-lasso.svg
+    :target: https://github.com/yngvem/group-lasso/blob/master/LICENSE
+
 The group lasso [1] regulariser is a well known method to achieve structured 
 sparsity in machine learning and statistics. The idea is to create 
 non-overlapping groups of covariates, and recover regression weights in which 
@@ -247,6 +250,11 @@ The todos are, in decreasing order of importance
 
    - I have an experimental implementation one-class logistic regression, 
      but it is not yet fully validated.
+
+7. Group sparse lasso
+
+   - The proximal operator can be implemented using a few ADMM iterations
+     and it shouldn't affect performance much.
 
 Unfortunately, the most interesting parts are the least important ones, so 
 expect the list to be worked on from both ends simultaneously.
