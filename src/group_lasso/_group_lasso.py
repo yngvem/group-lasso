@@ -162,6 +162,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         b, w = _split_intercept(w)
         for group, reg in zip(self.groups_, self.l2_reg_vector):
             regularizer += reg * la.norm(w[group, :])
+        regularizer += la.norm(w.ravel(), 1)
         return regularizer
 
     def _get_reg_vector(self, reg):
