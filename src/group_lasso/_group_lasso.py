@@ -30,7 +30,7 @@ def _l1_l2_prox(w, l1_reg, l2_reg, groups):
 
 
 def _l1_prox(w, reg):
-    return np.sign(w)*np.maximum(0, np.abs(w) - reg)
+    return np.sign(w) * np.maximum(0, np.abs(w) - reg)
 
 
 def _l2_prox(w, reg):
@@ -81,7 +81,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
        A sparse-group lasso. Journal of Computational and Graphical
        Statistics, 22(2), 231-245.
     .. [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
-       algorithm for linear inverse problems. SIAM journal on imaging 
+       algorithm for linear inverse problems. SIAM journal on imaging
        sciences. 2009 Mar 4;2(1):183-202.
     .. [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
        gradient schemes. Foundations of computational mathematics.
@@ -374,7 +374,7 @@ def _l2_grad(A, b, x):
 
 class GroupLasso(BaseGroupLasso, RegressorMixin):
     """Sparse group lasso regularised least squares linear regression.
-    
+
     This class implements the Sparse Group Lasso [1]_ regularisation for
     linear regression with the mean squared penalty.
 
@@ -396,7 +396,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
        A sparse-group lasso. Journal of Computational and Graphical
        Statistics, 22(2), 231-245.
     .. [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
-       algorithm for linear inverse problems. SIAM journal on imaging 
+       algorithm for linear inverse problems. SIAM journal on imaging
        sciences. 2009 Mar 4;2(1):183-202.
     .. [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
        gradient schemes. Foundations of computational mathematics.
@@ -460,8 +460,8 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         """
         super().__init__(
             groups=groups,
-            l1_reg=0.05,
-            l2_reg=0.05,
+            l1_reg=l1_reg,
+            l2_reg=l2_reg,
             n_iter=n_iter,
             tol=tol,
             subsampling_scheme=subsampling_scheme,
