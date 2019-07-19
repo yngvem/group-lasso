@@ -1,6 +1,10 @@
 Efficient Group Lasso in Python
 ===============================
 
+This library provides efficient computation of sparse group lasso regularise
+linear regression (with aims to provide logistic regression in the near
+future).
+
 What is group lasso?
 --------------------
 
@@ -26,6 +30,16 @@ city. We therefore wish to create a regression model that predicts fruit
 demand based on a sparse set of city observations. One way to achieve such
 sparsity is through the framework of group lasso regularisation [1]_.
 
+What is sparse group lasso
+--------------------------
+
+The sparse group lasso regulariser [2]_ is an extension of the group lasso
+regulariser that also promotes parameter-wise sparsity. It is the combination
+of the group lasso penalty and the normal lasso penalty. If we consider the
+example above, then the sparse group lasso penalty will yield a sparse set
+of groups and also a sparse set of covariates in each selected group. An
+example of where this is useful is if each city query has a set price that
+increases based on the number of measurements we want from each city.
 
 A quick mathematical interlude
 ------------------------------
@@ -38,15 +52,17 @@ was defined as regularised linear regression with the following loss function
 
     \text{arg} \min_{\mathbf{\beta}_g \in \mathbb{R^{d_g}}} 
     || \sum_{g \in \mathcal{G}} \left[\mathbf{X}_g\mathbf{\beta}_g\right] - \mathbf{y} ||_2^2
-    + w \sum_{g \in \mathcal{G}} \sqrt{d_g}||\mathbf{\beta}_g||_2,
+    + \lambda_1 ||\mathbf{\beta}||_1
+    + \lambda_2 \sum_{g \in \mathcal{G}} \sqrt{d_g}||\mathbf{\beta}_g||_2,
 
 where :math:`\mathbf{X}_g \in \mathbb{R}^{n \times d_g}` is the data matrix
 corresponding to the covariates in group :math:`g`, :math:`\mathbf{\beta}_g`
 is the regression coefficients corresponding to group :math:`g`, 
 :math:`\mathbf{y} \in \mathbf{R}^n` is the regression target, :math:`n` is the
 number of measurements, :math:`d_g` is the dimensionality of group :math:`g`,
-:math:`w` is the regularisation penalty and :math:`\mathcal{G}` is the set of
-all groups. 
+:math:`\lambda_1` is the parameter-wise regularisation penalty,
+:math:`\lambda_2` is the group-wise regularisation penalty and
+:math:`\mathcal{G}` is the set of all groups. 
 
 Notice, in the equation above, that the 2-norm is *not* squared. A consequence
 of this is that the regulariser has a "kink" at zero, uninformative covariate
@@ -102,3 +118,6 @@ References
 .. [1] Yuan M, Lin Y. Model selection and estimation in regression with
     grouped variables. Journal of the Royal Statistical Society: Series B
     (Statistical Methodology). 2006 Feb;68(1):49-67.
+.. [2] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
+    A sparse-group lasso. Journal of Computational and Graphical
+    Statistics, 22(2), 231-245.
