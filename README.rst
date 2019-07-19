@@ -16,7 +16,6 @@ Group Lasso
 
 .. image:: https://readthedocs.org/projects/group-lasso/badge/?version=latest
     :target: https://group-lasso.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
 
 The group lasso [1]_ regulariser is a well known method to achieve structured 
 sparsity in machine learning and statistics. The idea is to create 
@@ -266,7 +265,7 @@ References
    SIAM Journal on Imaging Sciences 2009 2:1, 183-202.
    doi:10.1137/080716542  
 
-.. [4]: O’Donoghue, B. & Candès, E. (2015), Adaptive Restart for
+.. [4] O’Donoghue, B. & Candès, E. (2015), Adaptive Restart for
    Accelerated Gradient Schemes. Found Comput Math 15: 715.
    doi:10.1007/s10208-013-9150-
 
