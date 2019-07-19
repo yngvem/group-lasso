@@ -155,15 +155,15 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         self.fit_intercept = fit_intercept
         self.random_state = random_state
 
-    def _regularizer(self, w):
+    def _regulariser(self, w):
         """The regularisation penalty for a given coefficient vector, ``w``.
         """
-        regularizer = 0
+        regulariser = 0
         b, w = _split_intercept(w)
         for group, reg in zip(self.groups_, self.l2_reg_vector):
-            regularizer += reg * la.norm(w[group, :])
-        regularizer += la.norm(w.ravel(), 1)
-        return regularizer
+            regulariser += reg * la.norm(w[group, :])
+        regulariser += la.norm(w.ravel(), 1)
+        return regulariser
 
     def _get_reg_vector(self, reg):
         """Get the group-wise regularisation coefficients from ``reg``.
@@ -194,7 +194,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             Coefficient vector, ``w.shape == (num_features, num_targets)``,
             or ``w.shape == (num_features,)``
         """
-        return self._unregularised_loss(X, y, w) + self._regularizer(w)
+        return self._unregularised_loss(X, y, w) + self._regulariser(w)
 
     def loss(self, X, y):
         """The group-lasso regularised loss with the current coefficients
