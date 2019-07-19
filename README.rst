@@ -214,11 +214,11 @@ The todos are, in decreasing order of importance
 3. Sparse group lasso
 
    - The proximal operator can be computed using the closed-form solution in
-     [4]_.
+     [3]_.
 
 4. Overlapping groups sparse group lasso
 
-   - The proximal operator can be computed using the dual-form in [4]_.
+   - The proximal operator can be computed using the dual-form in [3]_.
 
 Unfortunately, the most interesting parts are the least important ones, so 
 expect the list to be worked on from both ends simultaneously.
@@ -226,8 +226,8 @@ expect the list to be worked on from both ends simultaneously.
 ----------------------
 Implementation details
 ----------------------
-The problem is solved using the FISTA optimiser [3] with a gradient-based 
-adaptive restarting scheme [4]. No line search is currently implemented, but 
+The problem is solved using the FISTA optimiser [4] with a gradient-based 
+adaptive restarting scheme [5]. No line search is currently implemented, but 
 I hope to look at that later.
 
 Although fast, the FISTA optimiser does not achieve as low loss values as the 
@@ -260,15 +260,15 @@ References
     A sparse-group lasso. Journal of Computational and Graphical
     Statistics, 22(2), 231-245.
 
-.. [3] Beck, A. and Teboulle, M. (2009), A Fast Iterative 
+.. [3] Yuan L, Liu J, Ye J. (2011), Efficient methods for overlapping
+   group lasso. Advances in Neural Information Processing Systems
+   (pp. 352-360).
+
+.. [4] Beck, A. and Teboulle, M. (2009), A Fast Iterative 
    Shrinkage-Thresholding Algorithm for Linear Inverse Problems.
    SIAM Journal on Imaging Sciences 2009 2:1, 183-202.
    doi:10.1137/080716542  
 
-.. [4] O’Donoghue, B. & Candès, E. (2015), Adaptive Restart for
+.. [5] O’Donoghue, B. & Candès, E. (2015), Adaptive Restart for
    Accelerated Gradient Schemes. Found Comput Math 15: 715.
    doi:10.1007/s10208-013-9150-
-
-.. [5] Yuan L, Liu J, Ye J. (2011), Efficient methods for overlapping
-   group lasso. Advances in Neural Information Processing Systems
-   (pp. 352-360).
