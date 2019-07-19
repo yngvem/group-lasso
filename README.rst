@@ -158,7 +158,7 @@ Group lasso regression can also be used as a transformer
     # Generate group lasso object and fit the model
     # We use an artificially high regularisation coefficient since
     #  we want to use group lasso as a variable selection algorithm.
-    gl = GroupLasso(groups=groups, reg=.1)
+    gl = GroupLasso(groups=groups, group_reg=0.1, l1_reg=0.05)
     gl.fit(X, y)
     new_X = gl.transform(X)
 

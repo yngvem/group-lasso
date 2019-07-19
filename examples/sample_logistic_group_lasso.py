@@ -48,7 +48,8 @@ if __name__ == "__main__":
         groups=groups,
         n_iter=10,
         tol=1e-8,
-        reg=1e-2,
+        group_reg=1e-2,
+        l1_reg=1e-2,
         subsampling_scheme=0.1,
         fit_intercept=True,
     )

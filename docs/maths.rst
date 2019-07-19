@@ -4,8 +4,8 @@ Mathematical background
 Quick overview
 --------------
 
-Let us recap the definition of a group lasso regularised machine learning
-algorithm. Consdier the unregularised loss function
+Let us recap the definition of a sparse group lasso regularised machine 
+learning algorithm. Consdier the unregularised loss function
 :math:`L(\mathbf{\beta}; \mathbf{X}, \mathbf{y})`, where
 :math:`\mathbf{\beta}` is the model coefficients, :math:`\mathbf{X}` is the
 data matrix and :math:`\mathbf{y}` is the target vector (or matrix in the
@@ -19,9 +19,12 @@ define the group lasso regularised loss function as
 
 .. math::
 
-    L(\mathbf{\beta}; \mathbf{X}, \mathbf{y}) + w \sum_{g \in \mathcal{G}} \sqrt{d_g} ||\mathbf{\beta}||_2
+    L(\mathbf{\beta}; \mathbf{X}, \mathbf{y})
+     + \lambda_1 ||\mathbf{\beta}||_1
+     + \lambda_2 \sum_{g \in \mathcal{G}} \sqrt{d_g} ||\mathbf{\beta}||_2
 
-where :math:`w` is the regularisation penalty,
+where :math:`\lambda_1` is the parameter-wise regularisation penalty,
+:math:`\lambda_2` is the group-wise regularisation penalty,
 :math:`\mathbf{\beta}_g \in \mathbf{d_g}` and
 :math:`\mathcal{G}` is the set of all groups.
 
@@ -38,7 +41,7 @@ best algorithms to solve optimisation problems on the form
 
 .. math::
 
-    \text{arg} min_{\mathbf{\beta}} L(\mathbf{\beta}) + R(\mathbf{\beta}),
+    \text{arg} \min_{\mathbf{\beta}} L(\mathbf{\beta}) + R(\mathbf{\beta}),
 
 where :math:`L` is a convex, differentiable function with Lipschitz continuous
 gradient and :math:`R` is a convex lower semicontinouous function. 
@@ -54,10 +57,23 @@ to know how to compute
 
 .. math::
 
-    prox(\beta) = \text{arg} \min_{\hat{\mathbf{\beta}}}
+    prox(\mathbf{\beta}) = \text{arg} \min_{\hat{\mathbf{\beta}}}
     R(\hat{\mathbf{\beta}}) + \frac{1}{2}||\hat{\mathbf{\beta}} - \mathbf{\beta}||_2^2
 
-efficiently. For more information on the proximal map, see [4]_ or [5]_. 
+efficiently. To compute the proximal map for the sparse group lasso regulariser,
+we use the following identity from [4]_:
+
+.. math::
+
+    prox_{\lambda_1 ||\mathbf{\cdot}||_1 + \lambda_2 \sum_g w_g ||\mathbf{\cdot}||}(\mathbf{\beta})
+    = prox_{\lambda_2 \sum_g w_g ||\mathbf{\cdot}||}(prox_{\lambda_1 ||\mathbf{\cdot}||_1}(\mathbf{\beta}),
+
+where :math:`prox_{\lambda_1 ||\mathbf{\cdot}||_1 + \lambda_2 \sum_g w_g ||\mathbf{\cdot}||}`
+is the proximal map for the sparse group lasso regulariser, 
+:math:`prox_{\lambda_2 \sum_g w_g ||\mathbf{\cdot}||}` is the proximal map
+for the group lasso regulariser and
+:math:`prox_{\lambda_1 ||\mathbf{\cdot}||_1` is the proximal map for the
+lasso regulariser. For more information on the proximal map, see [5]_ or [6]_. 
 Finally, we need a Lipschitz bound for the gradient of the loss function, since
 this is used to compute the step-length of the optimisation procedure. Luckily,
 this can also be estimated using a line-search.
@@ -98,3 +114,8 @@ References
 .. [3] O’Donoghue B, Candes E. Adaptive restart for accelerated gradient
     schemes. Foundations of computational mathematics.
     2015 Jun 1;15(3):715-32.
+.. [4] Yuan L, Liu J, Ye J. (2011), Efficient methods for overlapping group
+    lasso. Advances in Neural Information Processing Systems (pp. 352-360).
+.. [5] Parikh, N., & Boyd, S. (2014). Proximal algorithms. Foundations and
+    Trends in Optimization, 1(3), 127-239.
+.. [6] Beck, A. (2017). First-order methods in optimization (Vol. 25). SIAM.

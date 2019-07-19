@@ -22,7 +22,7 @@ class BaseTestGroupLasso:
 
     @pytest.fixture
     def gl_no_reg(self):
-        return self.MLFitter(reg=0, groups=[])
+        return self.MLFitter(l1_reg=0, group_reg=0, groups=[])
 
     @pytest.fixture
     def sklearn_no_reg(self):
@@ -76,6 +76,7 @@ class BaseTestGroupLasso:
         self, gl_no_reg, sklearn_no_reg, ml_problem
     ):
         X, y, w = ml_problem
+        print(gl_no_reg)
         for gl in self.all_configs(gl_no_reg):
             yhat1 = gl.fit_predict(X, y)
             sklearn_no_reg.fit(X, y)
