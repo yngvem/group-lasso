@@ -41,7 +41,7 @@ sparse group lasso solver being fully scikit-learn API compliant.
 About this project
 ------------------
 This project is developed by Yngve Mardal Moe and released under an MIT 
-lisence.
+lisence. I am still working out a few things so changes might come rapidly.
 
 ------------------
 Installation guide
@@ -211,12 +211,7 @@ The todos are, in decreasing order of importance
    - I have an experimental implementation one-class logistic regression, 
      but it is not yet fully validated.
 
-3. Sparse group lasso
-
-   - The proximal operator can be computed using the closed-form solution in
-     [3]_.
-
-4. Overlapping groups sparse group lasso
+3. Overlapping groups sparse group lasso
 
    - The proximal operator can be computed using the dual-form in [3]_.
 
