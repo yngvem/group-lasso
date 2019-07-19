@@ -251,10 +251,14 @@ The todos are, in decreasing order of importance
    - I have an experimental implementation one-class logistic regression, 
      but it is not yet fully validated.
 
-3. Group sparse lasso
+3. Sparse group lasso
 
-   - The proximal operator can be implemented using a few ADMM iterations
-     and it shouldn't affect performance much.
+   - The proximal operator can be computed using the closed-form solution in
+     [4]_.
+
+4. Overlapping groups sparse group lasso
+
+   - The proximal operator can be computed using the dual-form in [4]_.
 
 Unfortunately, the most interesting parts are the least important ones, so 
 expect the list to be worked on from both ends simultaneously.
