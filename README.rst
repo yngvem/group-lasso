@@ -18,7 +18,7 @@ Group Lasso
     :target: https://group-lasso.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-The group lasso [1] regulariser is a well known method to achieve structured 
+The group lasso [1]_ regulariser is a well known method to achieve structured 
 sparsity in machine learning and statistics. The idea is to create 
 non-overlapping groups of covariates, and recover regression weights in which 
 only a sparse set of these covariate groups have non-zero components.
@@ -33,7 +33,7 @@ LASSO with measurements grouped by which sensor they were measured by, then
 we will get a sparse set of sensors.
 
 An extension of the group lasso regulariser is the sparse group lasso
-regulariser, which imposes both group-wise sparsity and coefficient-wise
+regulariser [2]_, which imposes both group-wise sparsity and coefficient-wise
 sparsity. This is done by combining the group lasso penalty with the
 traditional lasso penalty. In this library, I have implemented an efficient
 sparse group lasso solver being fully scikit-learn API compliant.
@@ -227,8 +227,8 @@ expect the list to be worked on from both ends simultaneously.
 ----------------------
 Implementation details
 ----------------------
-The problem is solved using the FISTA optimiser [2] with a gradient-based 
-adaptive restarting scheme [3]. No line search is currently implemented, but 
+The problem is solved using the FISTA optimiser [3] with a gradient-based 
+adaptive restarting scheme [4]. No line search is currently implemented, but 
 I hope to look at that later.
 
 Although fast, the FISTA optimiser does not achieve as low loss values as the 
@@ -252,10 +252,24 @@ monotonically.
 References
 ----------
 
-[1]: Yuan, M. and Lin, Y. (2006), Model selection and estimation in regression with grouped variables. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 68: 49-67. doi:10.1111/j.1467-9868.2005.00532.x
+.. [1] Yuan, M. and Lin, Y. (2006), Model selection and estimation in
+   regression with grouped variables. Journal of the Royal Statistical
+   Society: Series B (Statistical Methodology), 68: 49-67.
+   doi:10.1111/j.1467-9868.2005.00532.x
 
-[2]: Beck, A. and Teboulle, M. (2009), A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems. SIAM Journal on Imaging Sciences 2009 2:1, 183-202. doi:10.1137/080716542  
+.. [2] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
+    A sparse-group lasso. Journal of Computational and Graphical
+    Statistics, 22(2), 231-245.
 
-[3]: O’Donoghue, B. & Candès, E. (2015), Adaptive Restart for Accelerated Gradient Schemes. Found Comput Math 15: 715. doi:10.1007/s10208-013-9150-
+.. [3] Beck, A. and Teboulle, M. (2009), A Fast Iterative 
+   Shrinkage-Thresholding Algorithm for Linear Inverse Problems.
+   SIAM Journal on Imaging Sciences 2009 2:1, 183-202.
+   doi:10.1137/080716542  
 
-[4]: Yuan L, Liu J, Ye J. (2011), Efficient methods for overlapping group lasso. Advances in Neural Information Processing Systems (pp. 352-360).
+.. [4]: O’Donoghue, B. & Candès, E. (2015), Adaptive Restart for
+   Accelerated Gradient Schemes. Found Comput Math 15: 715.
+   doi:10.1007/s10208-013-9150-
+
+.. [5] Yuan L, Liu J, Ye J. (2011), Efficient methods for overlapping
+   group lasso. Advances in Neural Information Processing Systems
+   (pp. 352-360).
