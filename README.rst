@@ -226,8 +226,8 @@ expect the list to be worked on from both ends simultaneously.
 ----------------------
 Implementation details
 ----------------------
-The problem is solved using the FISTA optimiser [4] with a gradient-based 
-adaptive restarting scheme [5]. No line search is currently implemented, but 
+The problem is solved using the FISTA optimiser [4]_ with a gradient-based 
+adaptive restarting scheme [5]_. No line search is currently implemented, but 
 I hope to look at that later.
 
 Although fast, the FISTA optimiser does not achieve as low loss values as the 
