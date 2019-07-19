@@ -25,8 +25,8 @@ from group_lasso._fista import fista
 _DEBUG = False
 
 
-def _l1_l2_prox(w, l1_reg, l2_reg, groups):
-    return _group_l2_prox(_l1_prox(w, l1_reg), l2_reg, groups)
+def _l1_l2_prox(w, l1_reg, group_reg, groups):
+    return _group_l2_prox(_l1_prox(w, l1_reg), group_reg, groups)
 
 
 def _l1_prox(w, reg):
@@ -95,7 +95,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def __init__(
         self,
         groups,
-        l2_reg=0.05,
+        group_reg=0.05,
         l1_reg=0.05,
         n_iter=100,
         tol=1e-5,
@@ -115,9 +115,9 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             columns of the data matrix belong to the first group, the next
             two columns belong to the second group and the last column should
             not be regularised.
-        l2_reg : float or iterable [default=0.05]
+        group_reg : float or iterable [default=0.05]
             The regularisation coefficient(s) for the group sparsity penalty.
-            If ``l2_reg`` is an iterable, then its length should be equal to
+            If ``group_reg`` is an iterable, then its length should be equal to
             the number of groups.
         l1_reg : float or iterable [default=0.05]
             The regularisation coefficient for the coefficient sparsity
@@ -147,7 +147,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             The random state used for initialisation of parameters.
         """
         self.groups = groups
-        self.l2_reg = l2_reg
+        self.group_reg = group_reg
         self.l1_reg = l1_reg
         self.n_iter = n_iter
         self.tol = tol
@@ -160,7 +160,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """
         regulariser = 0
         b, w = _split_intercept(w)
-        for group, reg in zip(self.groups_, self.l2_reg_vector):
+        for group, reg in zip(self.groups_, self.group_reg_vector):
             regulariser += reg * la.norm(w[group, :])
         regulariser += la.norm(w.ravel(), 1)
         return regulariser
@@ -244,7 +244,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
         def prox(w):
             b, w_ = _split_intercept(w)
-            w_ = _l1_l2_prox(w_, self.l1_reg, self.l2_reg_vector, self.groups_)
+            w_ = _l1_l2_prox(w_, self.l1_reg, self.group_reg_vector, self.groups_)
             return _join_intercept(b, w_)
 
         def loss(w):
@@ -286,8 +286,8 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def _check_valid_parameters(self):
         """Check that the input parameters are valid.
         """
-        assert all(reg >= 0 for reg in self.l2_reg_vector)
-        assert len(self.l2_reg_vector) == len(np.unique(self.groups))
+        assert all(reg >= 0 for reg in self.group_reg_vector)
+        assert len(self.group_reg_vector) == len(np.unique(self.groups))
         assert self.n_iter > 0
         assert self.tol >= 0
 
@@ -309,7 +309,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
         self.random_state_ = check_random_state(self.random_state)
         self.groups_ = [self.groups == u for u in np.unique(groups) if u >= 0]
-        self.l2_reg_vector = self._get_reg_vector(self.l2_reg)
+        self.group_reg_vector = self._get_reg_vector(self.group_reg)
         self.losses_ = []
 
         self.coef_ = self.random_state_.standard_normal(
@@ -340,13 +340,10 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def sparsity_mask(self):
         """A boolean mask indicating whether features are used in prediction.
         """
-        pattern = np.zeros(len(self.coef_), dtype=bool)
-        for group in self.groups_:
-            pattern[group] = not np.allclose(
-                self.coef_[group], 0, atol=0, rtol=1e-10
-            )
+        coef_ = self.coef_.mean(1)
+        mean_abs_coef = abs(coef_.mean())
 
-        return pattern
+        return np.abs(coef_) > 1e-10*mean_abs_coef
 
     def transform(self, X):
         """Remove columns corresponding to zero-valued coefficients.
@@ -407,7 +404,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
     def __init__(
         self,
         groups=None,
-        l2_reg=0.05,
+        group_reg=0.05,
         l1_reg=0.05,
         n_iter=100,
         tol=1e-5,
@@ -428,9 +425,9 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
             columns of the data matrix belong to the first group, the next
             two columns belong to the second group and the last column should
             not be regularised.
-        l2_reg : float or iterable [default=0.05]
+        group_reg : float or iterable [default=0.05]
             The regularisation coefficient(s) for the group sparsity penalty.
-            If ``l2_reg`` is an iterable, then its length should be equal to
+            If ``group_reg`` is an iterable, then its length should be equal to
             the number of groups.
         l1_reg : float or iterable [default=0.05]
             The regularisation coefficient for the coefficient sparsity
@@ -462,7 +459,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         super().__init__(
             groups=groups,
             l1_reg=l1_reg,
-            l2_reg=l2_reg,
+            group_reg=group_reg,
             n_iter=n_iter,
             tol=tol,
             subsampling_scheme=subsampling_scheme,

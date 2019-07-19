@@ -42,10 +42,10 @@ if __name__ == "__main__":
         groups=groups,
         n_iter=10,
         tol=1e-8,
-        l1_reg=0.02,
-        l2_reg=0.05,
+        l1_reg=0.05,
+        group_reg=0.08,
         frobenius_lipschitz=True,
-        subsampling_scheme=1,
+        subsampling_scheme=None,
         fit_intercept=True,
     )
     print("Starting fit")
@@ -53,26 +53,14 @@ if __name__ == "__main__":
 
     for i in range(w.shape[1]):
         plt.figure()
+        plt.subplot(211)
         plt.plot(w[:, i], ".", label="True weights")
         plt.plot(gl.coef_[:, i], ".", label="Estimated weights")
-        plt.legend()
 
-        plt.figure()
+        plt.subplot(212)
         plt.plot(w[gl.sparsity_mask, i], ".", label="True weights")
         plt.plot(gl.coef_[gl.sparsity_mask, i], ".", label="Estimated weights")
         plt.legend()
-
-    plt.figure()
-    plt.plot(gl.losses_)
-    plt.title("Loss curve")
-    plt.xlabel("Iteration")
-    plt.ylabel("Loss")
-
-    plt.figure()
-    plt.plot(np.arange(1, len(gl.losses_)), gl.losses_[1:])
-    plt.title("Loss curve, ommitting first iteration")
-    plt.xlabel("Iteration")
-    plt.ylabel("Loss")
 
     plt.figure()
     plt.plot([w.min(), w.max()], [gl.coef_.min(), gl.coef_.max()], "gray")

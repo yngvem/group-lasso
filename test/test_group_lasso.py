@@ -22,7 +22,7 @@ class BaseTestGroupLasso:
 
     @pytest.fixture
     def gl_no_reg(self):
-        return self.MLFitter(l1_reg=0, l2_reg=0, groups=[])
+        return self.MLFitter(l1_reg=0, group_reg=0, groups=[])
 
     @pytest.fixture
     def sklearn_no_reg(self):
