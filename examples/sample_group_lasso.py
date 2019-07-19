@@ -30,7 +30,7 @@ if __name__ == "__main__":
     w1 = generate_group_lasso_coefficients(group_sizes)
     w2 = generate_group_lasso_coefficients(group_sizes)
     w = np.hstack((w1, w2))
-    w *= np.random.random((len(w), 1)) > .4
+    w *= np.random.random((len(w), 1)) > 0.4
     w += np.random.randn(*w.shape) * coeff_noise_level
 
     print("Generating targets")
@@ -61,7 +61,6 @@ if __name__ == "__main__":
         plt.plot(w[gl.sparsity_mask, i], ".", label="True weights")
         plt.plot(gl.coef_[gl.sparsity_mask, i], ".", label="Estimated weights")
         plt.legend()
-
 
     plt.figure()
     plt.plot(gl.losses_)
