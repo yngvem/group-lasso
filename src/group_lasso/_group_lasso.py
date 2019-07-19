@@ -450,7 +450,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         )
         self.frobenius_lipchitz = frobenius_lipschitz
 
-    def fit(X, y, lipschitz=None):
+    def fit(self, X, y, lipschitz=None):
         """Fit a group lasso regularised linear regression model.
 
         Arguments
