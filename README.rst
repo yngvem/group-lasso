@@ -32,6 +32,12 @@ sensors, since they each generate five measurements. If we instead use group
 LASSO with measurements grouped by which sensor they were measured by, then
 we will get a sparse set of sensors.
 
+An extension of the group lasso regulariser is the sparse group lasso
+regulariser, which imposes both group-wise sparsity and coefficient-wise
+sparsity. This is done by combining the group lasso penalty with the
+traditional lasso penalty. In this library, I have implemented an efficient
+sparse group lasso solver being fully scikit-learn API compliant.
+
 ------------------
 About this project
 ------------------
