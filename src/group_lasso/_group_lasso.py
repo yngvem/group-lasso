@@ -26,11 +26,11 @@ _DEBUG = False
 
 
 def _l1_l2_prox(w, l1_reg, l2_reg, groups):
-    return _l2_prox(_l1_prox(w, l1_reg), l2_reg, groups)
+    return _group_l2_prox(_l1_prox(w, l1_reg), l2_reg, groups)
 
 
 def _l1_prox(w, reg):
-    return np.maximum(0, w - np.sign(w) * reg)
+    return np.sign(w)*np.maximum(0, np.abs(w) - reg)
 
 
 def _l2_prox(w, reg):
@@ -242,7 +242,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
         def prox(w):
             b, w_ = _split_intercept(w)
-            w_ = _l1_l2_prox(w_, self.l2_reg_vector, self.groups_)
+            w_ = _l1_l2_prox(w_, self.l1_reg, self.l2_reg_vector, self.groups_)
             return _join_intercept(b, w_)
 
         def loss(w):
@@ -307,7 +307,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
         self.random_state_ = check_random_state(self.random_state)
         self.groups_ = [self.groups == u for u in np.unique(groups) if u >= 0]
-        self.l2_reg_vector = self._get_reg_vector(self.reg)
+        self.l2_reg_vector = self._get_reg_vector(self.l2_reg)
         self.losses_ = []
 
         self.coef_ = self.random_state_.standard_normal(
@@ -470,7 +470,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         )
         self.frobenius_lipchitz = frobenius_lipschitz
 
-    def fit(X, y, lipschitz=None):
+    def fit(self, X, y, lipschitz=None):
         """Fit a group lasso regularised linear regression model.
 
         Arguments

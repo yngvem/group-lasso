@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     np.random.seed(0)
 
-    group_sizes = [np.random.randint(5, 15) for i in range(100)]
+    group_sizes = [np.random.randint(15, 30) for i in range(50)]
     groups = get_groups_from_group_sizes(group_sizes)
     num_coeffs = sum(group_sizes)
     num_datapoints = 100_000
@@ -30,6 +30,7 @@ if __name__ == "__main__":
     w1 = generate_group_lasso_coefficients(group_sizes)
     w2 = generate_group_lasso_coefficients(group_sizes)
     w = np.hstack((w1, w2))
+    w *= np.random.random((len(w), 1)) > .4
     w += np.random.randn(*w.shape) * coeff_noise_level
 
     print("Generating targets")
@@ -41,7 +42,8 @@ if __name__ == "__main__":
         groups=groups,
         n_iter=10,
         tol=1e-8,
-        reg=0.08,
+        l1_reg=0.02,
+        l2_reg=0.05,
         frobenius_lipschitz=True,
         subsampling_scheme=1,
         fit_intercept=True,
@@ -54,6 +56,12 @@ if __name__ == "__main__":
         plt.plot(w[:, i], ".", label="True weights")
         plt.plot(gl.coef_[:, i], ".", label="Estimated weights")
         plt.legend()
+
+        plt.figure()
+        plt.plot(w[gl.sparsity_mask, i], ".", label="True weights")
+        plt.plot(gl.coef_[gl.sparsity_mask, i], ".", label="Estimated weights")
+        plt.legend()
+
 
     plt.figure()
     plt.plot(gl.losses_)
