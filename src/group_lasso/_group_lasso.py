@@ -566,3 +566,44 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
             )
 
         super().fit(X, y, lipschitz=lipschitz)
+
+
+def _softmax(logit):
+    expl = np.exp(logit)
+    return expl/expl.sum(axis=(logit.ndim - 1))
+
+
+def _softmax_proba(X, W):
+    return _softmax(logit(X, W))
+
+
+def _softmax_cross_entropy(X, Y, W):
+    P = _softmax_proba(X, W)
+    return -np.sum(Y*np.log(P))
+
+
+class SoftmaxGroupLasso(BaseGroupLasso, ClassifierMixin):
+    def _compute_proba(self, X, w):
+        return _softmax_proba(X, w)
+
+    def _unregularised_loss(self, X, y, w):
+        X_, y_ = self.subsample(X, y)
+        return _softmax_cross_entropy(X_, y_, w).sum() / len(X)
+
+    def _grad(self, X, y, w):
+        X_, y_ = self.subsample(X, y)
+        p = _softmax_proba(X_, w)
+        return X_.T @ (p - y_) / len(X_)
+
+    def _compute_lipschitz(self, X, y):
+        C = y.shape[-1]
+        return 2 * C**(1/4) * np.linalg.norm(X, "fro") / len(X)
+
+    def predict_proba(self, X):
+        return _softmax_proba(X, self.coef_)
+
+    def predict(self, X):
+        """Predict using the linear model.
+        """
+        return self.predict_proba(X) >= 0.5
+

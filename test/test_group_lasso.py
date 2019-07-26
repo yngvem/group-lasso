@@ -52,23 +52,27 @@ class BaseTestGroupLasso:
 
     def test_grad(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
+        shape = w.shape
+        wrav = w.ravel()
         eps = 1e-5
 
         for gl in self.all_configs(gl_no_reg):
             gl._init_fit(X, y)
             loss = gl._unregularised_loss(X, y, w)
-            dw = np.empty_like(w)
+            dw = np.empty_like(wrav)
             g = gl._grad(X, y, w)
-            for i, _ in enumerate(w):
-                w_ = w.copy()
-                w_[i] += eps
+            g = g.ravel()
+            for i, _ in enumerate(wrav):
+                wrav_ = wrav.copy()
+                wrav_[i] += eps
+                w_ = wrav_.reshape(shape)
                 dw[i] = (gl._unregularised_loss(X, y, w_) - loss) / (
-                    w_[i] - w[i]
+                    wrav_[i] - wrav[i]
                 )
                 print(
-                    f"{dw[i, 0]:.3e}, {g[i, 0]:.3e}, {w[i, 0]:.3e}, "
-                    f"{dw[i, 0] - g[i, 0]:.3e}, "
-                    f"{(dw[i, 0] - g[i, 0])/g[i, 0]:.3e}"
+                    f"{dw[i]:.3e}, {g[i]:.3e}, {wrav[i]:.3e}, "
+                    f"{dw[i] - g[i]:.3e}, "
+                    f"{(dw[i] - g[i])/g[i]:.3e}"
                 )
             assert np.allclose(dw, g, rtol=1e-2, atol=1e-5)
 
@@ -122,3 +126,35 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
             yhat2 = sklearn_no_reg.predict(X)
 
             assert np.mean(yhat1.astype(float) - yhat2.astype(float)) < 5e-2
+
+
+class TestSoftmaxGroupLasso(BaseTestGroupLasso):
+    MLFitter = _group_lasso.LogisticGroupLasso
+    UnregularisedMLFitter = LogisticRegression
+    num_classes = 5
+
+
+    def random_weights(self):
+        return np.random.standard_normal((self.num_cols, self.num_classes))
+
+
+    @pytest.fixture
+    def ml_problem(self):
+        np.random.seed(0)
+        X = np.random.standard_normal((self.num_rows, self.num_cols))
+        w = self.random_weights()
+        y = _group_lasso._sigmoid(X @ w) > 0.5
+        return X, y, w
+
+    def test_unregularised_fit_equal_sklearn(
+        self, gl_no_reg, sklearn_no_reg, ml_problem
+    ):
+        X, y, w = ml_problem
+        sklearn_no_reg.set_params(multi_class='multinomial', solver='lbfgs')
+        for gl in self.all_configs(gl_no_reg):
+            yhat1 = gl.fit_predict(X, y)
+            sklearn_no_reg.fit(X, np.argmax(y, axis=1))
+            yhat2 = sklearn_no_reg.predict(X)
+
+            assert np.mean(np.argmax(yhat1, axis=1).astype(float) != yhat2.astype(float)) < 5e-2
+
