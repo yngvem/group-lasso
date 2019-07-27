@@ -1,4 +1,4 @@
-from group_lasso import SoftmaxGroupLasso
+from group_lasso import MultinomialGroupLasso
 from utils import (
     get_groups_from_group_sizes,
     generate_group_lasso_coefficients,
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     z = np.array(z)
 
     print("Starting fit")
-    gl = SoftmaxGroupLasso(
+    gl = MultinomialGroupLasso(
         groups=groups,
         n_iter=10,
         tol=1e-8,

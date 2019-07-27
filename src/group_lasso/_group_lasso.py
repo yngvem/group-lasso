@@ -592,7 +592,7 @@ def one_hot_encode(y):
     return y
 
 
-class SoftmaxGroupLasso(BaseGroupLasso, ClassifierMixin):
+class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
     def __init__(
         self,
         groups,

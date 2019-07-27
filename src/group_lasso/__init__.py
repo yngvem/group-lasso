@@ -10,6 +10,6 @@ __email__ = "yngve.m.moe@gmail.com"
 from group_lasso._group_lasso import (
     GroupLasso,
     LogisticGroupLasso,
-    SoftmaxGroupLasso,
+    MultinomialGroupLasso,
     BaseGroupLasso,
 )

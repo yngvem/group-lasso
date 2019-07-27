@@ -128,8 +128,8 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
             assert np.mean(yhat1.astype(float) - yhat2.astype(float)) < 5e-2
 
 
-class TestSoftmaxGroupLasso(BaseTestGroupLasso):
-    MLFitter = _group_lasso.SoftmaxGroupLasso
+class TestMultinomialGroupLasso(BaseTestGroupLasso):
+    MLFitter = _group_lasso.MultinomialGroupLasso
     UnregularisedMLFitter = LogisticRegression
     num_classes = 5
 
