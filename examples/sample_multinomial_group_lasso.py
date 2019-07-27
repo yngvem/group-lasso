@@ -81,7 +81,7 @@ if __name__ == "__main__":
     plt.ylabel("Learned coefficients")
     plt.xlabel("True coefficients")
 
-    print("X shape: {shape}".format(shape=shape))
+    print("X shape: {shape}".format(shape=X.shape))
     print("Transformed X shape: {shape}".format(shape=gl.transform(X).shape))
     print(
         "True intercept: {intercept}".format(intercept=(intercept - intercept.mean())/np.linalg.norm(intercept - intercept.mean()))
