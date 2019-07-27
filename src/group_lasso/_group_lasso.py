@@ -245,7 +245,9 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
         def prox(w):
             b, w_ = _split_intercept(w)
-            w_ = _l1_l2_prox(w_, self.l1_reg, self.group_reg_vector, self.groups_)
+            w_ = _l1_l2_prox(
+                w_, self.l1_reg, self.group_reg_vector, self.groups_
+            )
             return _join_intercept(b, w_)
 
         def loss(w):
@@ -345,7 +347,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         coef_ = self.coef_.mean(1)
         mean_abs_coef = abs(coef_.mean())
 
-        return np.abs(coef_) > 1e-10*mean_abs_coef
+        return np.abs(coef_) > 1e-10 * mean_abs_coef
 
     def transform(self, X):
         """Remove columns corresponding to zero-valued coefficients.
@@ -532,7 +534,34 @@ def _logistic_cross_entropy(X, y, w):
 
 
 class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
-    """WARNING: Experimental.
+    """Sparse group lasso regularised single-class logistic regression.
+
+    This class implements the Sparse Group Lasso [1]_ regularisation for
+    logistic regression with a cross entropy penalty.
+
+    This class is implemented as both a regressor and a transformation.
+    If the ``transform`` method is called, then the columns of the input
+    that correspond to zero-valued regression coefficients are dropped.
+
+    The loss is optimised using the FISTA algorithm proposed in [2]_ with the
+    generalised gradient-based restarting scheme proposed in [3]_. This
+    algorithm is not as accurate as a few other optimisation algorithms,
+    but it is extremely efficient and does recover the sparsity patterns.
+    We therefore reccomend that this class is used as a transformer to select
+    the viable features and that the output is fed into another classification
+    algorithm, such as LogisticRegression in scikit-learn.
+
+    References
+    ----------
+    .. [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
+       A sparse-group lasso. Journal of Computational and Graphical
+       Statistics, 22(2), 231-245.
+    .. [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
+       algorithm for linear inverse problems. SIAM journal on imaging
+       sciences. 2009 Mar 4;2(1):183-202.
+    .. [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
+       gradient schemes. Foundations of computational mathematics.
+       Jun 1;15(3):715-32.
     """
 
     def _compute_proba(self, X, w):
@@ -564,7 +593,7 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
             warnings.warn(
                 f"You have passed {n} targets to a single class classifier. "
                 f"This will simply train {n} different models meaning that "
-                f"multiple classes can be predicted as true at once.",
+                f"multiple classes can be predicted as true at once."
             )
 
         super().fit(X, y, lipschitz=lipschitz)
@@ -574,8 +603,10 @@ def _softmax(logit):
     logit = logit - logit.max(1, keepdims=True)
     expl = np.exp(logit)
     if np.any(np.isnan(expl)):
-        from pdb import set_trace; set_trace()
-    return expl/expl.sum(axis=(logit.ndim - 1), keepdims=True)
+        from pdb import set_trace
+
+        set_trace()
+    return expl / expl.sum(axis=(logit.ndim - 1), keepdims=True)
 
 
 def _softmax_proba(X, W):
@@ -584,7 +615,8 @@ def _softmax_proba(X, W):
 
 def _softmax_cross_entropy(X, Y, W):
     P = _softmax_proba(X, W)
-    return -np.sum(Y*np.log(P))
+    return -np.sum(Y * np.log(P))
+
 
 def one_hot_encode(y):
     if y.ndim == 1:
@@ -593,6 +625,37 @@ def one_hot_encode(y):
 
 
 class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
+    """Sparse group lasso regularised multi-class logistic regression.
+
+    This class implements the Sparse Group Lasso [1]_ regularisation for
+    multinomial regression (also known as multi-class logistic regression)
+    with a cross entropy penalty.
+
+    This class is implemented as both a regressor and a transformation.
+    If the ``transform`` method is called, then the columns of the input
+    that correspond to zero-valued regression coefficients are dropped.
+
+    The loss is optimised using the FISTA algorithm proposed in [2]_ with the
+    generalised gradient-based restarting scheme proposed in [3]_. This
+    algorithm is not as accurate as a few other optimisation algorithms,
+    but it is extremely efficient and does recover the sparsity patterns.
+    We therefore reccomend that this class is used as a transformer to select
+    the viable features and that the output is fed into another classification
+    algorithm, such as LogisticRegression in scikit-learn.
+
+    References
+    ----------
+    .. [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
+       A sparse-group lasso. Journal of Computational and Graphical
+       Statistics, 22(2), 231-245.
+    .. [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
+       algorithm for linear inverse problems. SIAM journal on imaging
+       sciences. 2009 Mar 4;2(1):183-202.
+    .. [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
+       gradient schemes. Foundations of computational mathematics.
+       Jun 1;15(3):715-32
+    """
+
     def __init__(
         self,
         groups,
@@ -674,12 +737,12 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
         y = one_hot_encode(y)
         X_, y_ = self.subsample(X, y)
         p = _softmax_proba(X_, w)
-            
+
         return X_.T @ (p - y_) / len(X_)
 
     def _compute_lipschitz(self, X, y):
         C = y.shape[-1]
-        return 2 * C**(1/4) * np.linalg.norm(X, "fro") / len(X)
+        return 2 * C ** (1 / 4) * np.linalg.norm(X, "fro") / len(X)
 
     def predict_proba(self, X):
         return _softmax_proba(X, self.coef_)
@@ -696,5 +759,10 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
         check_consistent_length(X, y)
         check_array(X)
         check_array(y, ensure_2d=False)
+        if set(np.unique(y)) != {0, 1}:
+            raise ValueError(
+                "The target array must either be a 2D dummy encoded (binary)"
+                "array or a 1D array with class labels as array elements."
+            )
 
         return X, y
