@@ -16,6 +16,7 @@ from sklearn.base import (
     RegressorMixin,
     ClassifierMixin,
 )
+from sklearn.preprocessing import OneHotEncoder
 
 from group_lasso._singular_values import find_largest_singular_value
 from group_lasso._subsampling import subsample
@@ -319,11 +320,12 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         self.intercept_ = np.zeros((1, self.coef_.shape[1]))
 
         self._check_valid_parameters()
+        return X, y
 
     def fit(self, X, y, lipschitz=None):
         """Fit a group-lasso regularised linear model.
         """
-        self._init_fit(X, y)
+        X, y = self._init_fit(X, y)
         self._minimise_loss(X, y, lipschitz=lipschitz)
 
     @abstractmethod
@@ -562,37 +564,117 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
             warnings.warn(
                 f"You have passed {n} targets to a single class classifier. "
                 f"This will simply train {n} different models meaning that "
-                f"multiple classes can be predicted as true at once."
+                f"multiple classes can be predicted as true at once.",
             )
 
         super().fit(X, y, lipschitz=lipschitz)
 
 
 def _softmax(logit):
+    logit = logit - logit.max(1, keepdims=True)
     expl = np.exp(logit)
-    return expl/expl.sum(axis=(logit.ndim - 1))
+    if np.any(np.isnan(expl)):
+        from pdb import set_trace; set_trace()
+    return expl/expl.sum(axis=(logit.ndim - 1), keepdims=True)
 
 
 def _softmax_proba(X, W):
-    return _softmax(logit(X, W))
+    return _softmax(_logit(X, W))
 
 
 def _softmax_cross_entropy(X, Y, W):
     P = _softmax_proba(X, W)
     return -np.sum(Y*np.log(P))
 
+def one_hot_encode(y):
+    if y.ndim == 1:
+        y = OneHotEncoder(sparse=False).fit_transform(y[:, np.newaxis])
+    return y
+
 
 class SoftmaxGroupLasso(BaseGroupLasso, ClassifierMixin):
+    def __init__(
+        self,
+        groups,
+        group_reg=0.05,
+        l1_reg=0.05,
+        n_iter=100,
+        tol=1e-5,
+        subsampling_scheme=None,
+        fit_intercept=True,
+        random_state=None,
+    ):
+        """
+
+        Arguments
+        ---------
+        groups : Iterable
+            Iterable that specifies which group each column corresponds to.
+            For columns that should not be regularised, the corresponding
+            group index should either be None or negative. For example, the
+            list ``[1, 1, 1, 2, 2, -1]`` specifies that the first three
+            columns of the data matrix belong to the first group, the next
+            two columns belong to the second group and the last column should
+            not be regularised.
+        group_reg : float or iterable [default=0.05]
+            The regularisation coefficient(s) for the group sparsity penalty.
+            If ``group_reg`` is an iterable, then its length should be equal to
+            the number of groups.
+        l1_reg : float or iterable [default=0.05]
+            The regularisation coefficient for the coefficient sparsity
+            penalty.
+        n_iter : int [default=100]
+            The maximum number of iterations to perform
+        tol : float [default=1e-5]
+            The convergence tolerance. The optimisation algorithm
+            will stop once ||x_{n+1} - x_n|| < ``tol``.
+        subsampling_scheme : None, float, int or str [default=None]
+            The subsampling rate used for the gradient and singular value
+            computations. If it is a float, then it specifies the fraction
+            of rows to use in the computations. If it is an int, it
+            specifies the number of rows to use in the computation and if
+            it is a string, then it must be 'sqrt' and the number of rows used
+            in the computations is the square root of the number of rows
+            in X.
+        frobenius_lipschitz : bool [default=False]
+            Use the Frobenius norm to estimate the lipschitz coefficient of the
+            MSE loss. This works well for systems whose power iterations
+            converge slowly. If False, then subsampled power iterations are
+            used. Using the Frobenius approximation for the Lipschitz
+            coefficient might fail, and end up with all-zero weights.
+        fit_intercept : bool [default=True]
+            Whether to fit an intercept or not.
+        random_state : np.random.RandomState [default=None]
+            The random state used for initialisation of parameters.
+        """
+        if subsampling_scheme is not None:
+            warnings.warn(
+                "Subsampling is not stable for multinomial group lasso."
+            )
+        super().__init__(
+            groups=groups,
+            group_reg=group_reg,
+            l1_reg=l1_reg,
+            n_iter=n_iter,
+            tol=tol,
+            subsampling_scheme=subsampling_scheme,
+            fit_intercept=fit_intercept,
+            random_state=random_state,
+        )
+
     def _compute_proba(self, X, w):
         return _softmax_proba(X, w)
 
     def _unregularised_loss(self, X, y, w):
+        y = one_hot_encode(y)
         X_, y_ = self.subsample(X, y)
         return _softmax_cross_entropy(X_, y_, w).sum() / len(X)
 
     def _grad(self, X, y, w):
+        y = one_hot_encode(y)
         X_, y_ = self.subsample(X, y)
         p = _softmax_proba(X_, w)
+            
         return X_.T @ (p - y_) / len(X_)
 
     def _compute_lipschitz(self, X, y):
@@ -605,5 +687,14 @@ class SoftmaxGroupLasso(BaseGroupLasso, ClassifierMixin):
     def predict(self, X):
         """Predict using the linear model.
         """
-        return self.predict_proba(X) >= 0.5
+        return np.argmax(self.predict_proba(X), axis=1)
 
+    def _prepare_dataset(self, X, y):
+        """Ensure that the inputs are valid and prepare them for fit.
+        """
+        y = one_hot_encode(y)
+        check_consistent_length(X, y)
+        check_array(X)
+        check_array(y, ensure_2d=False)
+
+        return X, y

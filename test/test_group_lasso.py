@@ -129,7 +129,7 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
 
 
 class TestSoftmaxGroupLasso(BaseTestGroupLasso):
-    MLFitter = _group_lasso.LogisticGroupLasso
+    MLFitter = _group_lasso.SoftmaxGroupLasso
     UnregularisedMLFitter = LogisticRegression
     num_classes = 5
 
@@ -143,7 +143,7 @@ class TestSoftmaxGroupLasso(BaseTestGroupLasso):
         np.random.seed(0)
         X = np.random.standard_normal((self.num_rows, self.num_cols))
         w = self.random_weights()
-        y = _group_lasso._sigmoid(X @ w) > 0.5
+        y = np.argmax(_group_lasso._sigmoid(X @ w), axis=1)
         return X, y, w
 
     def test_unregularised_fit_equal_sklearn(
@@ -153,8 +153,8 @@ class TestSoftmaxGroupLasso(BaseTestGroupLasso):
         sklearn_no_reg.set_params(multi_class='multinomial', solver='lbfgs')
         for gl in self.all_configs(gl_no_reg):
             yhat1 = gl.fit_predict(X, y)
-            sklearn_no_reg.fit(X, np.argmax(y, axis=1))
+            sklearn_no_reg.fit(X, y[:, np.newaxis])
             yhat2 = sklearn_no_reg.predict(X)
 
-            assert np.mean(np.argmax(yhat1, axis=1).astype(float) != yhat2.astype(float)) < 5e-2
+            assert np.mean(yhat1 != yhat2) < 5e-2
 
