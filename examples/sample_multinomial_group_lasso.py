@@ -27,21 +27,25 @@ if __name__ == "__main__":
 
     print("Generating data")
     X = np.random.randn(num_datapoints, num_coeffs)
-    intercept = np.arange(num_classes)*10
+    intercept = np.arange(num_classes) * 10
 
     print("Generating coefficients")
     w = np.random.randn(num_coeffs, num_classes)
     for group in np.unique(groups):
-        w[groups == group, :] *= (np.random.random() > 0.3)
+        w[groups == group, :] *= np.random.random() > 0.3
     w += np.random.randn(*w.shape) * coeff_noise_level
 
     print("Generating logits")
     y = X @ w
-    y += np.random.randn(*y.shape) * noise_level / np.linalg.norm(y, axis=1, keepdims=True)
+    y += (
+        np.random.randn(*y.shape)
+        * noise_level
+        / np.linalg.norm(y, axis=1, keepdims=True)
+    )
     y += intercept
 
     print("Generating targets")
-    p = np.exp(y)/(np.exp(y).sum(1, keepdims=True))
+    p = np.exp(y) / (np.exp(y).sum(1, keepdims=True))
     z = [np.random.choice(np.arange(num_classes), p=pi) for pi in p]
     z = np.array(z)
 
@@ -68,7 +72,7 @@ if __name__ == "__main__":
             ".",
             label="Normalised estimated weights",
         )
-        plt.title('Normalised coefficients')
+        plt.title("Normalised coefficients")
         plt.legend()
 
     plt.figure()
@@ -79,7 +83,11 @@ if __name__ == "__main__":
 
     print(f"X shape: {X.shape}")
     print(f"Transformed X shape: {gl.transform(X).shape}")
-    print(f"True intercept: {(intercept - intercept.mean())/np.linalg.norm(intercept - intercept.mean())}")
-    print(f"Estimated intercept: {(gl.intercept_ - gl.intercept_.mean())/np.linalg.norm(gl.intercept_ - gl.intercept_.mean())}")
+    print(
+        f"True intercept: {(intercept - intercept.mean())/np.linalg.norm(intercept - intercept.mean())}"
+    )
+    print(
+        f"Estimated intercept: {(gl.intercept_ - gl.intercept_.mean())/np.linalg.norm(gl.intercept_ - gl.intercept_.mean())}"
+    )
     print(f"Accuracy: {np.mean(z == gl.predict(X))}")
     plt.show()

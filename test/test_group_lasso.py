@@ -133,10 +133,8 @@ class TestMultinomialGroupLasso(BaseTestGroupLasso):
     UnregularisedMLFitter = LogisticRegression
     num_classes = 5
 
-
     def random_weights(self):
         return np.random.standard_normal((self.num_cols, self.num_classes))
-
 
     @pytest.fixture
     def ml_problem(self):
@@ -150,11 +148,10 @@ class TestMultinomialGroupLasso(BaseTestGroupLasso):
         self, gl_no_reg, sklearn_no_reg, ml_problem
     ):
         X, y, w = ml_problem
-        sklearn_no_reg.set_params(multi_class='multinomial', solver='lbfgs')
+        sklearn_no_reg.set_params(multi_class="multinomial", solver="lbfgs")
         for gl in self.all_configs(gl_no_reg):
             yhat1 = gl.fit_predict(X, y)
             sklearn_no_reg.fit(X, y[:, np.newaxis])
             yhat2 = sklearn_no_reg.predict(X)
 
             assert np.mean(yhat1 != yhat2) < 5e-2
-
