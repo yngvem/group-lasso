@@ -46,9 +46,8 @@ lisence. I am still working out a few things so changes might come rapidly.
 ------------------
 Installation guide
 ------------------
-Currently, the code only works with Python 3.6+, but I aim to 
-support Python 3.5 in the future. To install group-lasso via ``pip``,
-simply run the command::
+Group-lasso requires Python 3.5+, numpy and scikit-learn. 
+To install group-lasso via ``pip``, simply run the command::
 
     pip install group-lasso
 

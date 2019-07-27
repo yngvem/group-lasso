@@ -8,7 +8,7 @@ with open("README.rst") as f:
 
 setup(
     name="group-lasso",
-    version="0.1.4",
+    version="1.0.0",
     license="MIT",
     description=(
         "Fast group lasso regularised linear models in a sklearn-style API."
