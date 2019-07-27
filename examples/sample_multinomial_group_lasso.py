@@ -20,7 +20,7 @@ if __name__ == "__main__":
     group_sizes = [np.random.randint(5, 15) for i in range(50)]
     groups = get_groups_from_group_sizes(group_sizes)
     num_coeffs = sum(group_sizes)
-    num_datapoints = 10_000
+    num_datapoints = 10000
     num_classes = 5
     noise_level = 1
     coeff_noise_level = 0.05
@@ -81,13 +81,13 @@ if __name__ == "__main__":
     plt.ylabel("Learned coefficients")
     plt.xlabel("True coefficients")
 
-    print(f"X shape: {X.shape}")
-    print(f"Transformed X shape: {gl.transform(X).shape}")
+    print("X shape: {shape}".format(shape=shape))
+    print("Transformed X shape: {shape}".format(shape=gl.transform(X).shape))
     print(
-        f"True intercept: {(intercept - intercept.mean())/np.linalg.norm(intercept - intercept.mean())}"
+        "True intercept: {intercept}".format(intercept=(intercept - intercept.mean())/np.linalg.norm(intercept - intercept.mean()))
     )
     print(
-        f"Estimated intercept: {(gl.intercept_ - gl.intercept_.mean())/np.linalg.norm(gl.intercept_ - gl.intercept_.mean())}"
+        "Estimated intercept: {intercept}".format(intercept=(gl.intercept_ - gl.intercept_.mean())/np.linalg.norm(gl.intercept_ - gl.intercept_.mean()))
     )
-    print(f"Accuracy: {np.mean(z == gl.predict(X))}")
+    print("Accuracy: {accuracy}".format(accuracy=np.mean(z == gl.predict(X))))
     plt.show()

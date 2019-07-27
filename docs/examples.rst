@@ -13,7 +13,7 @@ making it easy to use for those familiar with the Python ML ecosystem.
     from group_lasso import GroupLasso
 
     # Dataset parameters
-    num_data_points = 10_000
+    num_data_points = 10000
     num_features = 500
     num_groups = 25
     assert num_features % num_groups == 0
@@ -45,9 +45,17 @@ making it easy to use for those familiar with the Python ML ecosystem.
 
     # Evaluate the model
     coef_correlation = np.corrcoef(w.ravel(), estimated_w.ravel())[0, 1]
-    print(f"True intercept: {intercept:.2f}. Estimated intercept: {estimated_intercept:.2f}")
-    print(f"Correlation between true and estimated coefficients: {coef_correlation:.2f}")
-    
+    print(
+        "True intercept: {intercept:.2f}. Estimated intercept: {estimated_intercept:.2f}".format(
+            estimated_intercept=estimated_intercept
+        )
+    )
+    print(
+        "Correlation between true and estimated coefficients: {coef_correlation:.2f}".format(
+            coef_correlation=coef_correlation
+         )
+    )
+
 .. code-block:: none
 
     True intercept: 2.00. Estimated intercept: 1.53
@@ -67,7 +75,7 @@ Group lasso regression can also be used as a transformer
     from group_lasso import GroupLasso
 
     # Dataset parameters
-    num_data_points = 10_000
+    num_data_points = 10000
     num_features = 500
     num_groups = 25
     assert num_features % num_groups == 0
@@ -105,7 +113,7 @@ Group lasso regression can also be used as a transformer
 
     print("The rows with zero-valued coefficients have now been removed from the dataset.")
     print("The new shape is:", new_X.shape)
-    print(f"The R^2 statistic for the group lasso model is: {R_squared:.2f}")
+    print("The R^2 statistic for the group lasso model is: {R_squared:.2f}".format(R_squared=R_squared))
     print("This is very low since the regularisation is so high."
 
     # Use group lasso in a scikit-learn pipeline
@@ -120,7 +128,7 @@ Group lasso regression can also be used as a transformer
     predicted_y = pipe.predict(X)
     R_squared = 1 - np.sum((y - predicted_y)**2)/np.sum(y**2)
 
-    print(f"The R^2 statistic for the pipeline is: {R_squared:.2f}")
+    print("The R^2 statistic for the pipeline is: {R_squared:.2f}".format(R_squared=R_squared))
 
     
 .. code-block:: none

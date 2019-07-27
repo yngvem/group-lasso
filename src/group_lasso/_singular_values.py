@@ -61,8 +61,10 @@ def find_largest_singular_value(
 
         if _DEBUG:
             print(
-                f"Finished {i}th power iteration:\n"
-                f"\tL={sqrt(s)}\n"
-                f"\tImprovement: {improvement:03g}"
+                (
+                    "Finished {i}th power iteration:\n"
+                    "\tL={s}\n"
+                    "\tImprovement: {improvement:03g}"
+                ).format(i=i, s=sqrt(s), improvement=improvement)
             )
     return np.sqrt(s)

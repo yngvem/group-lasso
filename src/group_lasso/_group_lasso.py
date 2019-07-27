@@ -263,15 +263,15 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
                 self.losses_.append(self._loss(X_, y_, w))
 
             if previous_w is None and _DEBUG:
-                print(f"Starting FISTA: ")
-                print(f"\tInitial loss: {self._loss(X_, y_, w)}")
+                print("Starting FISTA: ")
+                print("\tInitial loss: {loss}".format(loss=self._loss(X_, y_, w)))
 
             elif _DEBUG:
-                print(f"Completed iteration {it_num}:")
-                print(f"\tLoss: {self._loss(X_, y_, w)}")
-                print(f"\tWeight difference: {la.norm(w-previous_w)}")
-                print(f"\tWeight norm: {la.norm(w)}")
-                print(f"\tGrad: {la.norm(grad(w))}")
+                print("Completed iteration {it_num}:".format(it_num=it_num))
+                print("\tLoss: {loss}".format(loss=self._loss(X_, y_, w)))
+                print("\tWeight difference: {wdiff}".format(wdiff=la.norm(w-previous_w)))
+                print("\tWeight norm: {wnorm}".format(wnorm=la.norm(w)))
+                print("\tGrad: {gnorm}".format(gnorm=la.norm(grad(w))))
 
         weights = np.concatenate([self.intercept_, self.coef_])
         weights = fista(
@@ -591,9 +591,11 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         if y.ndim == 2 and y.shape[1] > 1:
             n = y.shape[1]
             warnings.warn(
-                f"You have passed {n} targets to a single class classifier. "
-                f"This will simply train {n} different models meaning that "
-                f"multiple classes can be predicted as true at once."
+                (
+                    "You have passed {n} targets to a single class classifier."
+                    " This will simply train {n} different models meaning that"
+                    " multiple classes can be predicted as true at once."
+                ).format(n=n)
             )
 
         super().fit(X, y, lipschitz=lipschitz)

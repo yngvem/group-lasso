@@ -69,11 +69,6 @@ class BaseTestGroupLasso:
                 dw[i] = (gl._unregularised_loss(X, y, w_) - loss) / (
                     wrav_[i] - wrav[i]
                 )
-                print(
-                    f"{dw[i]:.3e}, {g[i]:.3e}, {wrav[i]:.3e}, "
-                    f"{dw[i] - g[i]:.3e}, "
-                    f"{(dw[i] - g[i])/g[i]:.3e}"
-                )
             assert np.allclose(dw, g, rtol=1e-2, atol=1e-5)
 
     def test_unregularised_fit_equal_sklearn(

@@ -48,7 +48,7 @@ def fista(x0, grad, prox, loss, lipschitz, n_iter=10, tol=1e-6, callback=None):
 
     warnings.warn(
         "The FISTA iterations did not converge to a sufficient minimum.\n"
-        f"You used subsampling then this is expected, otherwise,"
+        "You used subsampling then this is expected, otherwise,"
         "try to increase the number of iterations "
         "or decreasing the tolerance.",
         RuntimeWarning,
