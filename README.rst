@@ -206,17 +206,6 @@ Furher work
 The todos are, in decreasing order of importance
 
 1. Python 3.5 compatibility
-2. Classification problems
-
-   - I have an experimental implementation one-class logistic regression, 
-     but it is not yet fully validated.
-
-3. Overlapping groups sparse group lasso
-
-   - The proximal operator can be computed using the dual-form in [3]_.
-
-Unfortunately, the most interesting parts are the least important ones, so 
-expect the list to be worked on from both ends simultaneously.
 
 ----------------------
 Implementation details

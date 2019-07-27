@@ -2,8 +2,7 @@ Efficient Group Lasso in Python
 ===============================
 
 This library provides efficient computation of sparse group lasso regularise
-linear regression (with aims to provide logistic regression in the near
-future).
+linear and logistic regression.
 
 What is group lasso?
 --------------------
