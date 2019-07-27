@@ -618,7 +618,7 @@ def _softmax_cross_entropy(X, Y, W):
     return -np.sum(Y * np.log(P))
 
 
-def one_hot_encode(y):
+def _one_hot_encode(y):
     if y.ndim == 1:
         y = LabelBinarizer().fit_transform(y[:, np.newaxis])
     return y
@@ -729,12 +729,12 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
         return _softmax_proba(X, w)
 
     def _unregularised_loss(self, X, y, w):
-        y = one_hot_encode(y)
+        y = _one_hot_encode(y)
         X_, y_ = self.subsample(X, y)
         return _softmax_cross_entropy(X_, y_, w).sum() / len(X)
 
     def _grad(self, X, y, w):
-        y = one_hot_encode(y)
+        y = _one_hot_encode(y)
         X_, y_ = self.subsample(X, y)
         p = _softmax_proba(X_, w)
 
@@ -755,7 +755,7 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
     def _prepare_dataset(self, X, y):
         """Ensure that the inputs are valid and prepare them for fit.
         """
-        y = one_hot_encode(y)
+        y = _one_hot_encode(y)
         check_consistent_length(X, y)
         check_array(X)
         check_array(y, ensure_2d=False)
