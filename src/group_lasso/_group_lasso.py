@@ -16,7 +16,7 @@ from sklearn.base import (
     RegressorMixin,
     ClassifierMixin,
 )
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelBinarizer
 
 from group_lasso._singular_values import find_largest_singular_value
 from group_lasso._subsampling import subsample
@@ -588,7 +588,7 @@ def _softmax_cross_entropy(X, Y, W):
 
 def one_hot_encode(y):
     if y.ndim == 1:
-        y = OneHotEncoder(sparse=False).fit_transform(y[:, np.newaxis])
+        y = LabelBinarizer().fit_transform(y[:, np.newaxis])
     return y
 
 
