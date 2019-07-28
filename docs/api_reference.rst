@@ -9,3 +9,4 @@ API Reference
 
 .. autoclass:: group_lasso.MultinomialGroupLasso
     :inherited-members:
+
