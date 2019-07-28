@@ -81,9 +81,11 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
     A sparse-group lasso. Journal of Computational and Graphical
     Statistics, 22(2), 231-245.
+
     [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
     algorithm for linear inverse problems. SIAM journal on imaging
     sciences. 2009 Mar 4;2(1):183-202.
+
     [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
     gradient schemes. Foundations of computational mathematics.
     Jun 1;15(3):715-32.
@@ -397,9 +399,11 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
     [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
     A sparse-group lasso. Journal of Computational and Graphical
     Statistics, 22(2), 231-245.
+
     [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
     algorithm for linear inverse problems. SIAM journal on imaging
     sciences. 2009 Mar 4;2(1):183-202.
+
     [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
     gradient schemes. Foundations of computational mathematics.
     Jun 1;15(3):715-32
@@ -556,9 +560,11 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
     [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
     A sparse-group lasso. Journal of Computational and Graphical
     Statistics, 22(2), 231-245.
+
     [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
     algorithm for linear inverse problems. SIAM journal on imaging
     sciences. 2009 Mar 4;2(1):183-202.
+
     [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
     gradient schemes. Foundations of computational mathematics.
     Jun 1;15(3):715-32.
@@ -650,9 +656,11 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
     [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
     A sparse-group lasso. Journal of Computational and Graphical
     Statistics, 22(2), 231-245.
+
     [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
     algorithm for linear inverse problems. SIAM journal on imaging
     sciences. 2009 Mar 4;2(1):183-202.
+
     [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
     gradient schemes. Foundations of computational mathematics.
     Jun 1;15(3):715-32
