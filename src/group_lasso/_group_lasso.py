@@ -69,24 +69,24 @@ def _add_intercept_col(X):
 class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     """Base class for sparse group lasso regularised optimisation.
 
-    This class implements the Sparse Group Lasso [1]_ regularisation for
+    This class implements the Sparse Group Lasso [1] regularisation for
     optimisation problems with Lipschitz continuous gradients, which is
     approximately equivalent to having a bounded second derivative.
 
-    The loss is optimised using the FISTA algorithm proposed in [2]_ with the
-    generalised gradient-based restarting scheme proposed in [3]_.
+    The loss is optimised using the FISTA algorithm proposed in [2] with the
+    generalised gradient-based restarting scheme proposed in [3].
 
     References
     ----------
-    .. [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
-       A sparse-group lasso. Journal of Computational and Graphical
-       Statistics, 22(2), 231-245.
-    .. [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
-       algorithm for linear inverse problems. SIAM journal on imaging
-       sciences. 2009 Mar 4;2(1):183-202.
-    .. [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
-       gradient schemes. Foundations of computational mathematics.
-       Jun 1;15(3):715-32.
+    [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
+    A sparse-group lasso. Journal of Computational and Graphical
+    Statistics, 22(2), 231-245.
+    [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
+    algorithm for linear inverse problems. SIAM journal on imaging
+    sciences. 2009 Mar 4;2(1):183-202.
+    [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
+    gradient schemes. Foundations of computational mathematics.
+    Jun 1;15(3):715-32.
     """
 
     # TODO: Document code
@@ -377,15 +377,15 @@ def _l2_grad(A, b, x):
 class GroupLasso(BaseGroupLasso, RegressorMixin):
     """Sparse group lasso regularised least squares linear regression.
 
-    This class implements the Sparse Group Lasso [1]_ regularisation for
+    This class implements the Sparse Group Lasso [1] regularisation for
     linear regression with the mean squared penalty.
 
     This class is implemented as both a regressor and a transformation.
     If the ``transform`` method is called, then the columns of the input
     that correspond to zero-valued regression coefficients are dropped.
 
-    The loss is optimised using the FISTA algorithm proposed in [2]_ with the
-    generalised gradient-based restarting scheme proposed in [3]_. This
+    The loss is optimised using the FISTA algorithm proposed in [2] with the
+    generalised gradient-based restarting scheme proposed in [3]. This
     algorithm is not as accurate as a few other optimisation algorithms,
     but it is extremely efficient and does recover the sparsity patterns.
     We therefore reccomend that this class is used as a transformer to select
@@ -394,15 +394,15 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
 
     References
     ----------
-    .. [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
-       A sparse-group lasso. Journal of Computational and Graphical
-       Statistics, 22(2), 231-245.
-    .. [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
-       algorithm for linear inverse problems. SIAM journal on imaging
-       sciences. 2009 Mar 4;2(1):183-202.
-    .. [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
-       gradient schemes. Foundations of computational mathematics.
-       Jun 1;15(3):715-32
+    [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
+    A sparse-group lasso. Journal of Computational and Graphical
+    Statistics, 22(2), 231-245.
+    [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
+    algorithm for linear inverse problems. SIAM journal on imaging
+    sciences. 2009 Mar 4;2(1):183-202.
+    [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
+    gradient schemes. Foundations of computational mathematics.
+    Jun 1;15(3):715-32
     """
 
     def __init__(
@@ -536,15 +536,15 @@ def _logistic_cross_entropy(X, y, w):
 class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
     """Sparse group lasso regularised single-class logistic regression.
 
-    This class implements the Sparse Group Lasso [1]_ regularisation for
+    This class implements the Sparse Group Lasso [1] regularisation for
     logistic regression with a cross entropy penalty.
 
     This class is implemented as both a regressor and a transformation.
     If the ``transform`` method is called, then the columns of the input
     that correspond to zero-valued regression coefficients are dropped.
 
-    The loss is optimised using the FISTA algorithm proposed in [2]_ with the
-    generalised gradient-based restarting scheme proposed in [3]_. This
+    The loss is optimised using the FISTA algorithm proposed in [2] with the
+    generalised gradient-based restarting scheme proposed in [3]. This
     algorithm is not as accurate as a few other optimisation algorithms,
     but it is extremely efficient and does recover the sparsity patterns.
     We therefore reccomend that this class is used as a transformer to select
@@ -553,15 +553,15 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
 
     References
     ----------
-    .. [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
-       A sparse-group lasso. Journal of Computational and Graphical
-       Statistics, 22(2), 231-245.
-    .. [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
-       algorithm for linear inverse problems. SIAM journal on imaging
-       sciences. 2009 Mar 4;2(1):183-202.
-    .. [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
-       gradient schemes. Foundations of computational mathematics.
-       Jun 1;15(3):715-32.
+    [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
+    A sparse-group lasso. Journal of Computational and Graphical
+    Statistics, 22(2), 231-245.
+    [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
+    algorithm for linear inverse problems. SIAM journal on imaging
+    sciences. 2009 Mar 4;2(1):183-202.
+    [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
+    gradient schemes. Foundations of computational mathematics.
+    Jun 1;15(3):715-32.
     """
 
     def _compute_proba(self, X, w):
@@ -629,7 +629,7 @@ def _one_hot_encode(y):
 class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
     """Sparse group lasso regularised multi-class logistic regression.
 
-    This class implements the Sparse Group Lasso [1]_ regularisation for
+    This class implements the Sparse Group Lasso [1] regularisation for
     multinomial regression (also known as multi-class logistic regression)
     with a cross entropy penalty.
 
@@ -637,8 +637,8 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
     If the ``transform`` method is called, then the columns of the input
     that correspond to zero-valued regression coefficients are dropped.
 
-    The loss is optimised using the FISTA algorithm proposed in [2]_ with the
-    generalised gradient-based restarting scheme proposed in [3]_. This
+    The loss is optimised using the FISTA algorithm proposed in [2] with the
+    generalised gradient-based restarting scheme proposed in [3]. This
     algorithm is not as accurate as a few other optimisation algorithms,
     but it is extremely efficient and does recover the sparsity patterns.
     We therefore reccomend that this class is used as a transformer to select
@@ -647,15 +647,15 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
 
     References
     ----------
-    .. [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
-       A sparse-group lasso. Journal of Computational and Graphical
-       Statistics, 22(2), 231-245.
-    .. [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
-       algorithm for linear inverse problems. SIAM journal on imaging
-       sciences. 2009 Mar 4;2(1):183-202.
-    .. [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
-       gradient schemes. Foundations of computational mathematics.
-       Jun 1;15(3):715-32
+    [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
+    A sparse-group lasso. Journal of Computational and Graphical
+    Statistics, 22(2), 231-245.
+    [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
+    algorithm for linear inverse problems. SIAM journal on imaging
+    sciences. 2009 Mar 4;2(1):183-202.
+    [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
+    gradient schemes. Foundations of computational mathematics.
+    Jun 1;15(3):715-32
     """
 
     def __init__(
