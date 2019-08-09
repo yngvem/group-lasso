@@ -1,3 +1,7 @@
+# TODO: Test the loss
+
+from copy import deepcopy
+
 import numpy as np
 import numpy.linalg as la
 import pytest
@@ -129,6 +133,35 @@ class BaseTestGroupLasso:
 
             assert not np.any(np.abs(nonzero) < 1e-10)
             assert np.allclose(zero, 0)
+
+    def test_fit_transform_equals_fit_and_transform(
+        self, ml_problem
+    ):
+        X, y, w = ml_problem
+        groups = np.random.randint(0, 10, w.shape)
+        reg = 0.01
+        gl_reg = self.MLFitter(group_reg=reg, l1_reg=reg, groups=groups)
+
+        for gl in self.all_configs(gl_reg):
+            gl_copy = deepcopy(gl)
+            yhat1 = gl.fit_transform(X, y)
+            gl_copy.fit(X, y)
+            yhat2 = gl_copy.transform(X)
+
+            assert yhat1.shape == yhat2.shape
+            assert np.allclose(yhat1, yhat2)
+
+    def test_fit_transform_yields_empty_with_high_reg(
+        self, ml_problem
+    ):
+        X, y, w = ml_problem
+        groups = np.random.randint(0, 10, w.shape)
+        reg = 10000
+        gl_reg = self.MLFitter(group_reg=reg, l1_reg=reg, groups=groups)
+
+        for gl in self.all_configs(gl_reg):
+            X2 = gl.fit_transform(X, y)
+            assert X2.ravel().shape == (0,)
 
 
 class TestGroupLasso(BaseTestGroupLasso):
