@@ -292,7 +292,8 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """Check that the input parameters are valid.
         """
         assert all(reg >= 0 for reg in self.group_reg_vector)
-        assert len(self.group_reg_vector) == len(np.unique(self.groups))
+        groups = np.array(self.groups)
+        assert len(self.group_reg_vector) == len(np.unique(groups[groups >= 0]))
         assert self.n_iter > 0
         assert self.tol >= 0
 

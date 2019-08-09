@@ -83,7 +83,52 @@ class BaseTestGroupLasso:
 
             assert np.allclose(yhat1, yhat2)
 
-    # TODO: FIND SPARSITY PATTERNS WITH NOISE
+    def test_high_group_sparsity_yields_zero_coefficients(
+        self, ml_problem
+    ):
+        X, y, w = ml_problem
+        reg = 10000
+        gl_reg = self.MLFitter(group_reg=reg)
+        for gl in self.all_configs(gl_reg):
+            gl.fit(X, y)
+            assert np.allclose(gl.coef_, 0)
+
+    def test_high_group_sparsity_yields_zero_coefficients(
+        self, ml_problem
+    ):
+        X, y, w = ml_problem
+        groups = np.random.randint(0, 10, w.shape)
+        reg = 10000
+        gl_reg = self.MLFitter(group_reg=reg, l1_reg=0, groups=groups)
+        for gl in self.all_configs(gl_reg):
+            gl.fit(X, y)
+            assert np.allclose(gl.coef_, 0)
+
+    def test_high_l1_sparsity_yields_zero_coefficients(
+        self, ml_problem
+    ):
+        X, y, w = ml_problem
+        groups = np.random.randint(0, 10, w.shape)
+        reg = 10000
+        gl_reg = self.MLFitter(group_reg=0, l1_reg=reg, groups=groups)
+        for gl in self.all_configs(gl_reg):
+            gl.fit(X, y)
+            assert np.allclose(gl.coef_, 0)
+
+    def test_negative_groups_are_ignored(
+        self, ml_problem
+    ):
+        X, y, w = ml_problem
+        groups = np.random.randint(-1, 10, w.shape)
+        reg = 10000
+        gl_reg = self.MLFitter(group_reg=reg, l1_reg=0, groups=groups)
+        for gl in self.all_configs(gl_reg):
+            gl.fit(X, y)
+            nonzero = gl.coef_[groups == -1]
+            zero = gl.coef_[groups != -1]
+
+            assert not np.any(np.abs(nonzero) < 1e-10)
+            assert np.allclose(zero, 0)
 
 
 class TestGroupLasso(BaseTestGroupLasso):
