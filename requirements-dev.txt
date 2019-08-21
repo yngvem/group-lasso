@@ -1,4 +1,5 @@
 numpy
 scikit-learn
-black
-pre-commit
+pytest
+pytest-cov
+coveralls
