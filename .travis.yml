@@ -1,13 +1,11 @@
+sudo: false
 language: python
 python:
-  - "3.6"
+  - "3.5"
 # command to install dependencies
 install:
-  - pip install -r requirements.txt
-  - pip install .
 before_script:
-  - pip install pytest
-  - pip install pytest-cov
+  - pip install tox-travis
   - pip install coveralls
 # command to run tests
 script: pytest --cov=group_lasso
