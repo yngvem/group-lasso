@@ -8,5 +8,5 @@ before_script:
   - pip install tox-travis
   - pip install coveralls
 # command to run tests
-script: pytest --cov=group_lasso
+script: tox
 after_success: coveralls
