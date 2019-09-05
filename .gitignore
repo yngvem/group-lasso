@@ -7,3 +7,4 @@ __pycache__
 *.egg-info
 _build
 pip-wheel-metadata/
+.idea
