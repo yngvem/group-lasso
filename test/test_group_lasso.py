@@ -17,7 +17,7 @@ class BaseTestGroupLasso:
     UnregularisedMLFitter = None
     num_rows = 200
     num_cols = 30
-    configs = [{"n_iter": 1000}]
+    configs = [{"n_iter": 1000, "fit_intercept": False}, {"n_iter": 1000, "fit_intercept": True}]
 
     def all_configs(self, gl):
         for config in self.configs:
