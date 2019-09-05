@@ -1,5 +1,0 @@
-numpy
-scikit-learn
-pytest
-pytest-cov
-coveralls

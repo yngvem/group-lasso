@@ -1,2 +1,6 @@
 numpy
 scikit-learn
+pytest
+pytest-cov
+pytest-randomly
+nox
