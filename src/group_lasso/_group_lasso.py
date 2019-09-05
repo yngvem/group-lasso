@@ -37,7 +37,7 @@ def _l1_prox(w, reg):
 def _l2_prox(w, reg):
     """The proximal operator for reg*||w||_2 (not squared).
     """
-    return max(0, 1 - reg / la.norm(w)) * w
+    return max(0, 1 - (reg + 1e-16) / (la.norm(w) + 1e-16)) * w
 
 
 def _group_l2_prox(w, reg_coeffs, groups):
@@ -105,6 +105,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         subsampling_scheme=None,
         fit_intercept=True,
         random_state=None,
+        warm_start=False,
     ):
         """
 
@@ -148,6 +149,9 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             Whether to fit an intercept or not.
         random_state : np.random.RandomState [default=None]
             The random state used for initialisation of parameters.
+        warm_start : bool [default=False]
+            If true, then subsequent calls to fit will not re-initialise the
+            model parameters. This can speed up the hyperparameter search
         """
         self.groups = groups
         self.group_reg = group_reg
@@ -157,6 +161,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         self.subsampling_scheme = subsampling_scheme
         self.fit_intercept = fit_intercept
         self.random_state = random_state
+        self.warm_start = warm_start
 
     def _regulariser(self, w):
         """The regularisation penalty for a given coefficient vector, ``w``.
@@ -178,7 +183,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         return reg
 
     @abstractmethod
-    def _unregularised_loss(self, X, y, w):
+    def _unregularised_loss(self, X, y, w):  #  pragma: nocover
         """The unregularised reconstruction loss.
         """
         pass
@@ -213,7 +218,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         return self._loss(X, y, self.coef_)
 
     @abstractmethod
-    def _compute_lipschitz(self, X, y):
+    def _compute_lipschitz(self, X, y):  # pragma: nocover
         """Compute Lipschitz bound for the gradient of the unregularised loss.
 
         The Lipschitz bound is with respect to the coefficient vector or
@@ -222,7 +227,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         pass
 
     @abstractmethod
-    def _grad(self, X, y, w):
+    def _grad(self, X, y, w):  # pragma: nocover
         """Compute the gradient of the unregularised loss wrt the coefficients.
         """
         pass
@@ -264,11 +269,11 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             if self.LOG_LOSSES:
                 self.losses_.append(self._loss(X_, y_, w))
 
-            if previous_w is None and _DEBUG:
+            if previous_w is None and _DEBUG:  # pragma: nocover
                 print("Starting FISTA: ")
                 print("\tInitial loss: {loss}".format(loss=self._loss(X_, y_, w)))
 
-            elif _DEBUG:
+            elif _DEBUG:  # pragma: nocover
                 print("Completed iteration {it_num}:".format(it_num=it_num))
                 print("\tLoss: {loss}".format(loss=self._loss(X_, y_, w)))
                 print("\tWeight difference: {wdiff}".format(wdiff=la.norm(w-previous_w)))
@@ -318,11 +323,12 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         self.group_reg_vector = self._get_reg_vector(self.group_reg)
         self.losses_ = []
 
-        self.coef_ = self.random_state_.standard_normal(
-            (X.shape[1], y.shape[1])
-        )
-        self.coef_ /= la.norm(self.coef_)
-        self.intercept_ = np.zeros((1, self.coef_.shape[1]))
+        if not self.warm_start or not hasattr(self, coef_):
+            self.coef_ = self.random_state_.standard_normal(
+                (X.shape[1], y.shape[1])
+            )
+            self.coef_ /= la.norm(self.coef_)
+            self.intercept_ = np.zeros((1, self.coef_.shape[1]))
 
         self._check_valid_parameters()
         return X, y
@@ -334,7 +340,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         self._minimise_loss(X, y, lipschitz=lipschitz)
 
     @abstractmethod
-    def predict(self, X):
+    def predict(self, X):  # pragma: nocover
         """Predict using the linear model.
         """
         pass
@@ -421,6 +427,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         fit_intercept=True,
         frobenius_lipschitz=False,
         random_state=None,
+        warm_start=False,
     ):
         """
 
@@ -464,6 +471,9 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
             Whether to fit an intercept or not.
         random_state : np.random.RandomState [default=None]
             The random state used for initialisation of parameters.
+        warm_start : bool [default=False]
+            If true, then subsequent calls to fit will not re-initialise the
+            model parameters. This can speed up the hyperparameter search
         """
         super().__init__(
             groups=groups,
@@ -474,6 +484,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
             subsampling_scheme=subsampling_scheme,
             fit_intercept=fit_intercept,
             random_state=random_state,
+            warm_start=warm_start,
         )
         self.frobenius_lipchitz = frobenius_lipschitz
 
@@ -611,10 +622,6 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
 def _softmax(logit):
     logit = logit - logit.max(1, keepdims=True)
     expl = np.exp(logit)
-    if np.any(np.isnan(expl)):
-        from pdb import set_trace
-
-        set_trace()
     return expl / expl.sum(axis=(logit.ndim - 1), keepdims=True)
 
 
@@ -677,6 +684,7 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
         subsampling_scheme=None,
         fit_intercept=True,
         random_state=None,
+        warm_start=False,
     ):
         """
 
@@ -720,6 +728,9 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
             Whether to fit an intercept or not.
         random_state : np.random.RandomState [default=None]
             The random state used for initialisation of parameters.
+        warm_start : bool [default=False]
+            If true, then subsequent calls to fit will not re-initialise the
+            model parameters. This can speed up the hyperparameter search
         """
         if subsampling_scheme is not None:
             warnings.warn(
@@ -734,6 +745,7 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
             subsampling_scheme=subsampling_scheme,
             fit_intercept=fit_intercept,
             random_state=random_state,
+            warm_start=warm_start,
         )
 
     def _compute_proba(self, X, w):
