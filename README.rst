@@ -209,7 +209,7 @@ Group lasso regression can also be used as a transformer
     The R^2 statistic for the pipeline is: 0.72
 
 -----------
-Furher work
+Further work
 -----------
 
 1. Test the code with sparse arrays
