@@ -211,9 +211,10 @@ Group lasso regression can also be used as a transformer
 -----------
 Furher work
 -----------
-The todos are, in decreasing order of importance
 
-1. Python 3.5 compatibility
+1. Test the code with sparse arrays
+2. Make it easier to work with categorical data
+3. Poisson regression
 
 ----------------------
 Implementation details
