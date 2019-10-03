@@ -16,6 +16,10 @@ Group Lasso
 
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/python/black
+    
+.. image:: https://www.codefactor.io/repository/github/yngvem/group-lasso/badge
+   :target: https://www.codefactor.io/repository/github/yngvem/group-lasso
+   :alt: CodeFactor
 
 The group lasso [1]_ regulariser is a well known method to achieve structured 
 sparsity in machine learning and statistics. The idea is to create 
