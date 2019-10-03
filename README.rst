@@ -2,6 +2,10 @@
 Group Lasso
 ===========
 
+.. image:: https://pepy.tech/badge/group-lasso
+    :target: https://pepy.tech/project/group-lasso
+    :alt: PyPI Downloads
+
 .. image:: https://travis-ci.org/yngvem/group-lasso.svg?branch=master
     :target: https://github.com/yngvem/group-lasso
 
