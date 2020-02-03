@@ -1,3 +1,7 @@
+"""
+A sample script that runs group lasso for logistic regression.
+"""
+
 from group_lasso import LogisticGroupLasso
 from utils import (
     get_groups_from_group_sizes,
@@ -10,6 +14,7 @@ import numpy as np
 
 group_lasso._singular_values._DEBUG = True
 group_lasso._group_lasso._DEBUG = True
+LogisticGroupLasso.LOG_LOSSES = True
 
 
 if __name__ == "__main__":
@@ -46,11 +51,11 @@ if __name__ == "__main__":
     print("Starting fit")
     gl = LogisticGroupLasso(
         groups=groups,
-        n_iter=10,
+        n_iter=100,
         tol=1e-8,
         group_reg=1e-2,
         l1_reg=1e-2,
-        subsampling_scheme=0.1,
+        subsampling_scheme=1,
         fit_intercept=True,
     )
     gl.fit(X, z)

@@ -1,3 +1,7 @@
+"""
+A sample script for multinomial group lasso.
+"""
+
 from group_lasso import MultinomialGroupLasso
 from utils import (
     get_groups_from_group_sizes,

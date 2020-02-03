@@ -1,3 +1,7 @@
+"""
+Some utilities to create gorup lasso coefficients.
+"""
+
 import numpy as np
 
 

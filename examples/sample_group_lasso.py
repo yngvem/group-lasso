@@ -1,24 +1,25 @@
+"""
+A sample script for group lasso regression
+"""
+
 from group_lasso import GroupLasso
 from utils import (
     get_groups_from_group_sizes,
     generate_group_lasso_coefficients,
 )
 import numpy as np
+import matplotlib.pyplot as plt
 
-
-# group_lasso._singular_values._DEBUG = True
-# group_lasso._group_lasso._DEBUG = True
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
 
     np.random.seed(0)
 
     group_sizes = [np.random.randint(15, 30) for i in range(50)]
     groups = get_groups_from_group_sizes(group_sizes)
     num_coeffs = sum(group_sizes)
-    num_datapoints = 100000
+    num_datapoints = 1000
     noise_level = 1
     coeff_noise_level = 0.05
 
@@ -49,6 +50,7 @@ if __name__ == "__main__":
         fit_intercept=True,
     )
     print("Starting fit")
+    gl.LOG_LOSSES = True
     gl.fit(X, y)
 
     for i in range(w.shape[1]):
@@ -67,6 +69,9 @@ if __name__ == "__main__":
     plt.scatter(w, gl.coef_, s=10)
     plt.ylabel("Learned coefficients")
     plt.xlabel("True coefficients")
+
+    plt.figure()
+    plt.plot(gl.losses_)
 
     print("X shape: {X.shape}".format(X=X))
     print("Transformed X shape: {shape}".format(shape=gl.transform(X).shape))
