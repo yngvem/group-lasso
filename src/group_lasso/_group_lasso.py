@@ -25,6 +25,18 @@ from group_lasso._fista import fista
 
 _DEBUG = False
 
+_OLD_REG_WARNING = """
+The behaviour has changed since v1.1.1, before then, a bug in the optimisation
+algorithm made it so the regularisation parameter was scaled by the largest 
+eigenvalue of the covariance matrix.
+
+To use the old behaviour, initialise the class with the keyword argument 
+`old_regularisation=False`.
+
+To supress this warning, initialise the class with the keyword argument
+`supress_warning=True`
+"""
+
 
 def _l1_l2_prox(w, l1_reg, group_reg, groups):
     return _group_l2_prox(_l1_prox(w, l1_reg), group_reg, groups)
@@ -91,8 +103,6 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     Jun 1;15(3):715-32.
     """
 
-    # TODO: Document code
-
     LOG_LOSSES = False
 
     def __init__(
@@ -106,6 +116,8 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         fit_intercept=True,
         random_state=None,
         warm_start=False,
+        old_regularisation=False,
+        supress_warning=False,
     ):
         """
 
@@ -161,7 +173,9 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         self.subsampling_scheme = subsampling_scheme
         self.fit_intercept = fit_intercept
         self.random_state = random_state
+        self.old_regularisation = old_regularisation
         self.warm_start = warm_start
+        self.supress_warning = supress_warning
 
     def _regulariser(self, w):
         """The regularisation penalty for a given coefficient vector, ``w``.
@@ -232,37 +246,37 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """
         pass
 
-    def _minimise_loss(self, X, y, lipschitz=None):
+    def _unregularised_gradient(self, w):
+        g = self._grad(self.X_, self.y_, w)
+        if not self.fit_intercept:
+            g[0] = 0
+        return g
+
+    def _scaled_prox(self, w):
+        """Apply the proximal map of the scaled regulariser to ``w``.
+
+        The scaling is the inverse lipschitz coefficient.
+        """
+        b, w_ = _split_intercept(w)
+        l1_reg = self.l1_reg
+        group_reg_vector = self.group_reg_vector
+        if self.old_regularisation:
+            l1_reg = l1_reg / self.lipschitz_
+            group_reg_vector = group_reg_vector / self.lipschitz_
+
+        w_ = _l1_l2_prox(w_, l1_reg, group_reg_vector, self.groups_)
+        return _join_intercept(b, w_)
+
+    def _subsampled_loss(self, w):
+        X_, y_ = self.subsample(self.X_, self.y_)
+        return self._loss(X_, y_, w)
+
+    def _minimise_loss(self):
         """Use the FISTA algorithm to solve the group lasso regularised loss.
         """
-        if self.fit_intercept:
-            X = _add_intercept_col(X)
-
-        if lipschitz is None:
-            lipschitz = self._compute_lipschitz(X, y)
-
-        if not self.fit_intercept:
-            X = _add_intercept_col(X)
-
-        def grad(w):
-            g = self._grad(X, y, w)
-            if not self.fit_intercept:
-                g[0] = 0
-            return g
-
-        def prox(w):
-            b, w_ = _split_intercept(w)
-            w_ = _l1_l2_prox(
-                w_, self.l1_reg, self.group_reg_vector, self.groups_
-            )
-            return _join_intercept(b, w_)
-
-        def loss(w):
-            X_, y_ = self.subsample(X, y)
-            self._loss(X_, y_, w)
-
+        # Need transition period before the correct regulariser is used without warning
         def callback(x, it_num, previous_x=None):
-            X_, y_ = self.subsample(X, y)
+            X_, y_ = self.subsample(self.X_, self.y_)
             w = x
             previous_w = previous_x
 
@@ -271,22 +285,32 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
             if previous_w is None and _DEBUG:  # pragma: nocover
                 print("Starting FISTA: ")
-                print("\tInitial loss: {loss}".format(loss=self._loss(X_, y_, w)))
+                print(
+                    "\tInitial loss: {loss}".format(loss=self._loss(X_, y_, w))
+                )
 
             elif _DEBUG:  # pragma: nocover
                 print("Completed iteration {it_num}:".format(it_num=it_num))
                 print("\tLoss: {loss}".format(loss=self._loss(X_, y_, w)))
-                print("\tWeight difference: {wdiff}".format(wdiff=la.norm(w-previous_w)))
+                print(
+                    "\tWeight difference: {wdiff}".format(
+                        wdiff=la.norm(w - previous_w)
+                    )
+                )
                 print("\tWeight norm: {wnorm}".format(wnorm=la.norm(w)))
-                print("\tGrad: {gnorm}".format(gnorm=la.norm(grad(w))))
+                print(
+                    "\tGrad: {gnorm}".format(
+                        gnorm=la.norm(self._unregularised_gradient(w))
+                    )
+                )
 
         weights = np.concatenate([self.intercept_, self.coef_])
         weights = fista(
             weights,
-            grad=grad,
-            prox=prox,
-            loss=loss,
-            lipschitz=lipschitz,
+            grad=self._unregularised_gradient,
+            prox=self._scaled_prox,
+            loss=self._subsampled_loss,
+            lipschitz=self.lipschitz_,
             n_iter=self.n_iter,
             tol=self.tol,
             callback=callback,
@@ -298,11 +322,13 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """
         assert all(reg >= 0 for reg in self.group_reg_vector)
         groups = np.array(self.groups)
-        assert len(self.group_reg_vector) == len(np.unique(groups[groups >= 0]))
+        assert len(self.group_reg_vector) == len(
+            np.unique(groups[groups >= 0])
+        )
         assert self.n_iter > 0
         assert self.tol >= 0
 
-    def _prepare_dataset(self, X, y):
+    def _prepare_dataset(self, X, y, lipschitz):
         """Ensure that the inputs are valid and prepare them for fit.
         """
         check_consistent_length(X, y)
@@ -310,34 +336,47 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         check_array(y)
         if len(y.shape) == 1:
             y = y.reshape(-1, 1)
-        return X, y
 
-    def _init_fit(self, X, y):
+        # Add the intercept column and compute Lipschitz bound the correct way
+        if self.fit_intercept:
+            X = _add_intercept_col(X)
+
+        if lipschitz is None:
+            lipschitz = self._compute_lipschitz(X, y)
+
+        if not self.fit_intercept:
+            X = _add_intercept_col(X)
+
+        return X, y, lipschitz
+
+    def _init_fit(self, X, y, lipschitz):
         """Initialise model and check inputs.
         """
-        X, y = self._prepare_dataset(X, y)
+        self.random_state_ = check_random_state(self.random_state)
+        X, y, lipschitz = self._prepare_dataset(X, y, lipschitz)
         groups = np.array([-1 if i is None else i for i in self.groups])
 
-        self.random_state_ = check_random_state(self.random_state)
         self.groups_ = [self.groups == u for u in np.unique(groups) if u >= 0]
         self.group_reg_vector = self._get_reg_vector(self.group_reg)
         self.losses_ = []
 
         if not self.warm_start or not hasattr(self, coef_):
             self.coef_ = self.random_state_.standard_normal(
-                (X.shape[1], y.shape[1])
+                (X.shape[1] - 1, y.shape[1])
             )
             self.coef_ /= la.norm(self.coef_)
             self.intercept_ = np.zeros((1, self.coef_.shape[1]))
 
         self._check_valid_parameters()
-        return X, y
+        self.X_, self.y_, self.lipschitz_ = X, y, lipschitz
+        if not self.old_regularisation and not self.supress_warning:
+            warnings.warn(_OLD_REG_WARNING)
 
     def fit(self, X, y, lipschitz=None):
         """Fit a group-lasso regularised linear model.
         """
-        X, y = self._init_fit(X, y)
-        self._minimise_loss(X, y, lipschitz=lipschitz)
+        self._init_fit(X, y, lipschitz=lipschitz)
+        self._minimise_loss()
 
     @abstractmethod
     def predict(self, X):  # pragma: nocover
@@ -510,7 +549,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
 
     def _unregularised_loss(self, X, y, w):
         X_, y_ = self.subsample(X, y)
-        MSE = 0.5 * np.sum((X_ @ w - y_) ** 2) / len(X_)
+        MSE = np.sum((X_ @ w - y_) ** 2) / len(X_)
         return MSE
 
     def _grad(self, X, y, w):
@@ -775,7 +814,7 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
         """
         return np.argmax(self.predict_proba(X), axis=1)
 
-    def _prepare_dataset(self, X, y):
+    def _prepare_dataset(self, X, y, lipschitz):
         """Ensure that the inputs are valid and prepare them for fit.
         """
         y = _one_hot_encode(y)
@@ -788,4 +827,14 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
                 "array or a 1D array with class labels as array elements."
             )
 
-        return X, y
+        # Add the intercept column and compute Lipschitz bound the correct way
+        if self.fit_intercept:
+            X = _add_intercept_col(X)
+
+        if lipschitz is None:
+            lipschitz = self._compute_lipschitz(X, y)
+
+        if not self.fit_intercept:
+            X = _add_intercept_col(X)
+
+        return X, y, lipschitz
