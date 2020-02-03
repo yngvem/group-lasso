@@ -1,3 +1,4 @@
+htmlcov
 *.pyc
 .pytest_cache
 .vscode
@@ -8,3 +9,5 @@ __pycache__
 _build
 pip-wheel-metadata/
 .idea
+.coverage
+.tox
