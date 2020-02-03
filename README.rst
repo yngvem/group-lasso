@@ -227,8 +227,8 @@ Further work
 ----------------------
 Implementation details
 ----------------------
-The problem is solved using the FISTA optimiser [4]_ with a gradient-based 
-adaptive restarting scheme [5]_. No line search is currently implemented, but 
+The problem is solved using the FISTA optimiser [3]_ with a gradient-based 
+adaptive restarting scheme [4]_. No line search is currently implemented, but 
 I hope to look at that later.
 
 Although fast, the FISTA optimiser does not achieve as low loss values as the 
@@ -261,15 +261,11 @@ References
     A sparse-group lasso. Journal of Computational and Graphical
     Statistics, 22(2), 231-245.
 
-.. [3] Yuan L, Liu J, Ye J. (2011), Efficient methods for overlapping
-   group lasso. Advances in Neural Information Processing Systems
-   (pp. 352-360).
-
-.. [4] Beck, A. and Teboulle, M. (2009), A Fast Iterative 
+.. [3] Beck, A. and Teboulle, M. (2009), A Fast Iterative 
    Shrinkage-Thresholding Algorithm for Linear Inverse Problems.
    SIAM Journal on Imaging Sciences 2009 2:1, 183-202.
    doi:10.1137/080716542  
 
-.. [5] O’Donoghue, B. & Candès, E. (2015), Adaptive Restart for
+.. [4] O’Donoghue, B. & Candès, E. (2015), Adaptive Restart for
    Accelerated Gradient Schemes. Found Comput Math 15: 715.
    doi:10.1007/s10208-013-9150-
