@@ -43,7 +43,7 @@ class BaseTestGroupLasso:
         X, y, w = ml_problem
 
         for gl in self.all_configs(gl_no_reg):
-            gl._init_fit(X, y)
+            gl._init_fit(X, y, lipschitz=None)
             L = gl._compute_lipschitz(X, y)
 
             g1 = gl._grad(X, y, w)
@@ -61,7 +61,7 @@ class BaseTestGroupLasso:
         eps = 1e-5
 
         for gl in self.all_configs(gl_no_reg):
-            gl._init_fit(X, y)
+            gl._init_fit(X, y, lipshitz=None)
             loss = gl._unregularised_loss(X, y, w)
             dw = np.empty_like(wrav)
             g = gl._grad(X, y, w)
