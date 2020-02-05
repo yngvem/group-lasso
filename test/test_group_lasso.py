@@ -1,6 +1,7 @@
 # TODO: Test the loss
 
 from copy import deepcopy
+from itertools import product
 
 import numpy as np
 import numpy.linalg as la
@@ -10,6 +11,35 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from group_lasso import _group_lasso
 
 np.random.seed(0)
+
+
+@pytest.mark.parametrize("reg", np.logspace(-3, 1, 10))
+def test_l1_prox(reg):
+    x = np.random.randn(100)
+    y = _group_lasso._l1_prox(x, reg)
+    for xi, yi in zip(x, y):
+        if np.abs(xi) > reg:
+            assert np.abs(yi) == pytest.approx(np.abs(xi) - reg)
+        else:
+            assert yi == 0
+
+
+@pytest.mark.parametrize(("reg", "n_per_group"), product(np.logspace(-3, 1, 10), [2, 3, 5]))
+def test_group_l2_prox(reg, n_per_group):
+    x = np.random.randn(50*n_per_group)
+    groups = [
+        np.zeros(x.shape, dtype=np.bool) for _ in range(50)
+    ]
+    for i, group in enumerate(groups):
+        group[i*n_per_group:(i+1)*n_per_group] = True
+    y = _group_lasso._group_l2_prox(x, [reg]*len(groups), groups)
+    for group in groups:
+        xi = x[group]
+        yi = y[group]
+        if np.linalg.norm(xi) > reg:
+            assert np.linalg.norm(yi) == pytest.approx(np.linalg.norm(xi) - reg)
+        else:
+            assert np.linalg.norm(yi) == pytest.approx(0)
 
 
 class BaseTestGroupLasso:
@@ -38,6 +68,31 @@ class BaseTestGroupLasso:
 
     def random_weights(self):
         return np.random.standard_normal((self.num_cols, 1))
+
+    def test_reg_is_correct(self, gl_no_reg, ml_problem):
+        X, y, w = ml_problem
+        gl = gl_no_reg
+        gl._init_fit(X, y, lipschitz=None)
+        assert gl._regulariser(w) == 0
+        
+        reg = 0.1
+        gl.l1_reg = reg
+        w2 = np.concatenate((w[0:1, :]*0, w))
+        assert gl._regulariser(w2) == np.linalg.norm(w.ravel(), 1)*reg
+
+        gl.groups = np.arange(len(w.ravel())).reshape(w.shape)
+        gl.group_reg = reg
+        gl._init_fit(X, y, lipschitz=None)
+        assert gl._regulariser(w2) == pytest.approx(2*np.linalg.norm(w.ravel(), 1)*reg)
+
+        gl.groups = np.concatenate([np.arange(len(w.ravel())/2)]*2).reshape(w.shape)
+        gl.group_reg = reg
+        gl._init_fit(X, y, lipschitz=None)
+        regulariser = 0
+        for group in np.unique(gl.groups):
+            regulariser += reg*np.sqrt(2)*np.linalg.norm(w[gl.groups == group])
+        assert gl._regulariser(w2) == pytest.approx(regulariser + np.linalg.norm(w.ravel(), 1)*reg)
+
 
     def test_lipschits(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
