@@ -53,8 +53,8 @@ if __name__ == "__main__":
         groups=groups,
         n_iter=100,
         tol=1e-8,
-        group_reg=1e-2,
-        l1_reg=1e-2,
+        group_reg=1e-3,
+        l1_reg=1e-3,
         subsampling_scheme=1,
         fit_intercept=True,
     )

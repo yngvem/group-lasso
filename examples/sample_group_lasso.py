@@ -11,16 +11,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+GroupLasso.LOG_LOSSES = True
+
 
 if __name__ == "__main__":
-
     np.random.seed(0)
 
     group_sizes = [np.random.randint(15, 30) for i in range(50)]
     groups = get_groups_from_group_sizes(group_sizes)
     num_coeffs = sum(group_sizes)
-    num_datapoints = 1000
-    noise_level = 1
+    num_datapoints = 10000
+    noise_level = 0.5
     coeff_noise_level = 0.05
 
     print("Generating data")
@@ -41,16 +42,15 @@ if __name__ == "__main__":
 
     gl = GroupLasso(
         groups=groups,
-        n_iter=10,
+        n_iter=100,
         tol=1e-8,
         l1_reg=0.05,
-        group_reg=0.08,
-        frobenius_lipschitz=True,
+        group_reg=0.18,
+        frobenius_lipschitz=False,
         subsampling_scheme=None,
         fit_intercept=True,
     )
     print("Starting fit")
-    gl.LOG_LOSSES = True
     gl.fit(X, y)
 
     for i in range(w.shape[1]):
