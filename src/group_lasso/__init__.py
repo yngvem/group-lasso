@@ -2,7 +2,7 @@
 """
 
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 __author__ = "Yngve Mardal Moe"
 __email__ = "yngve.m.moe@gmail.com"
 
