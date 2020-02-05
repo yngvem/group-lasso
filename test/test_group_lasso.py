@@ -1,5 +1,3 @@
-# TODO: Test the loss
-
 from copy import deepcopy
 from itertools import product
 
