@@ -31,7 +31,7 @@ algorithm made it so the regularisation parameter was scaled by the largest
 eigenvalue of the covariance matrix.
 
 To use the old behaviour, initialise the class with the keyword argument 
-`old_regularisation=False`.
+`old_regularisation=True`.
 
 To supress this warning, initialise the class with the keyword argument
 `supress_warning=True`
@@ -49,7 +49,10 @@ def _l1_prox(w, reg):
 def _l2_prox(w, reg):
     """The proximal operator for reg*||w||_2 (not squared).
     """
-    return max(0, 1 - (reg + 1e-16) / (la.norm(w) + 1e-16)) * w
+    norm_w = la.norm(w)
+    if norm_w == 0:
+        return 0*w
+    return max(0, 1 - reg / norm_w) * w
 
 
 def _group_l2_prox(w, reg_coeffs, groups):
@@ -58,7 +61,6 @@ def _group_l2_prox(w, reg_coeffs, groups):
     w = w.copy()
 
     for group, reg in zip(groups, reg_coeffs):
-        reg = reg * sqrt(group.sum())
         w[group] = _l2_prox(w[group], reg)
 
     return w
@@ -179,12 +181,15 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
     def _regulariser(self, w):
         """The regularisation penalty for a given coefficient vector, ``w``.
+
+        The first element of the coefficient vector is the intercept which
+        is sliced away.
         """
         regulariser = 0
         b, w = _split_intercept(w)
-        for group, reg in zip(self.groups_, self.group_reg_vector):
-            regulariser += reg * la.norm(w[group, :])
-        regulariser += la.norm(w.ravel(), 1)
+        for group, reg in zip(self.groups_, self.group_reg_vector_):
+            regulariser += reg * la.norm(w[group])
+        regulariser += self.l1_reg*la.norm(w.ravel(), 1)
         return regulariser
 
     def _get_reg_vector(self, reg):
@@ -259,8 +264,8 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """
         b, w_ = _split_intercept(w)
         l1_reg = self.l1_reg
-        group_reg_vector = self.group_reg_vector
-        if self.old_regularisation:
+        group_reg_vector = self.group_reg_vector_
+        if not self.old_regularisation:
             l1_reg = l1_reg / self.lipschitz_
             group_reg_vector = group_reg_vector / self.lipschitz_
 
@@ -320,9 +325,9 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def _check_valid_parameters(self):
         """Check that the input parameters are valid.
         """
-        assert all(reg >= 0 for reg in self.group_reg_vector)
+        assert all(reg >= 0 for reg in self.group_reg_vector_)
         groups = np.array(self.groups)
-        assert len(self.group_reg_vector) == len(
+        assert len(self.group_reg_vector_) == len(
             np.unique(groups[groups >= 0])
         )
         assert self.n_iter > 0
@@ -357,7 +362,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         groups = np.array([-1 if i is None else i for i in self.groups])
 
         self.groups_ = [self.groups == u for u in np.unique(groups) if u >= 0]
-        self.group_reg_vector = self._get_reg_vector(self.group_reg)
+        self.group_reg_vector_ = self._get_reg_vector(self.group_reg)
         self.losses_ = []
 
         if not self.warm_start or not hasattr(self, coef_):
@@ -550,7 +555,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
     def _unregularised_loss(self, X, y, w):
         X_, y_ = self.subsample(X, y)
         MSE = np.sum((X_ @ w - y_) ** 2) / len(X_)
-        return MSE
+        return 0.5*MSE
 
     def _grad(self, X, y, w):
         X_, y_ = self.subsample(X, y)
