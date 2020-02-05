@@ -205,7 +205,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def _unregularised_loss(self, X, y, w):  #  pragma: nocover
         """The unregularised reconstruction loss.
         """
-        pass
+        raise NotImplementedError
 
     def _loss(self, X, y, w):
         """The group-lasso regularised loss.
@@ -243,13 +243,13 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         The Lipschitz bound is with respect to the coefficient vector or
         matrix.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _grad(self, X, y, w):  # pragma: nocover
         """Compute the gradient of the unregularised loss wrt the coefficients.
         """
-        pass
+        raise NotImplementedError
 
     def _unregularised_gradient(self, w):
         g = self._grad(self.X_, self.y_, w)
@@ -387,7 +387,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def predict(self, X):  # pragma: nocover
         """Predict using the linear model.
         """
-        pass
+        raise NotImplementedError
 
     def fit_predict(self, X, y):
         self.fit(X, y)
