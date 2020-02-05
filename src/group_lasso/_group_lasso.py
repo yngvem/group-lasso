@@ -565,7 +565,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
     def _compute_lipschitz(self, X, y):
         num_rows, num_cols = X.shape
         if self.frobenius_lipchitz:
-            return la.norm(X, "fro") ** 2 / (num_rows * num_cols)
+            return la.norm(X, "fro") ** 2 / (num_rows)
 
         s_max = find_largest_singular_value(
             X,
