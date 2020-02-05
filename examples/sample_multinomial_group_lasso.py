@@ -88,10 +88,16 @@ if __name__ == "__main__":
     print("X shape: {shape}".format(shape=X.shape))
     print("Transformed X shape: {shape}".format(shape=gl.transform(X).shape))
     print(
-        "True intercept: {intercept}".format(intercept=(intercept - intercept.mean())/np.linalg.norm(intercept - intercept.mean()))
+        "True intercept: {intercept}".format(
+            intercept=(intercept - intercept.mean())
+            / np.linalg.norm(intercept - intercept.mean())
+        )
     )
     print(
-        "Estimated intercept: {intercept}".format(intercept=(gl.intercept_ - gl.intercept_.mean())/np.linalg.norm(gl.intercept_ - gl.intercept_.mean()))
+        "Estimated intercept: {intercept}".format(
+            intercept=(gl.intercept_ - gl.intercept_.mean())
+            / np.linalg.norm(gl.intercept_ - gl.intercept_.mean())
+        )
     )
     print("Accuracy: {accuracy}".format(accuracy=np.mean(z == gl.predict(X))))
     plt.show()

@@ -13,4 +13,3 @@ from group_lasso._group_lasso import (
     MultinomialGroupLasso,
     BaseGroupLasso,
 )
-

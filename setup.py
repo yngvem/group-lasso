@@ -6,5 +6,4 @@ with open("README.rst") as f:
     long_description = f.read()
 
 
-setup(
-)
+setup()

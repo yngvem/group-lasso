@@ -8,7 +8,7 @@ def _fista_momentum(momentum):
 
 
 def _fista_it(x, momentum_x, momentum, lipschitz, grad, prox):
-    new_x = prox(momentum_x - 0.5*grad(momentum_x) / lipschitz)
+    new_x = prox(momentum_x - 0.5 * grad(momentum_x) / lipschitz)
     new_momentum = _fista_momentum(momentum)
 
     dx = new_x - x

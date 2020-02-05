@@ -51,7 +51,7 @@ def _l2_prox(w, reg):
     """
     norm_w = la.norm(w)
     if norm_w == 0:
-        return 0*w
+        return 0 * w
     return max(0, 1 - reg / norm_w) * w
 
 
@@ -189,7 +189,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         b, w = _split_intercept(w)
         for group, reg in zip(self.groups_, self.group_reg_vector_):
             regulariser += reg * la.norm(w[group])
-        regulariser += self.l1_reg*la.norm(w.ravel(), 1)
+        regulariser += self.l1_reg * la.norm(w.ravel(), 1)
         return regulariser
 
     def _get_reg_vector(self, reg):
@@ -555,7 +555,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
     def _unregularised_loss(self, X, y, w):
         X_, y_ = self.subsample(X, y)
         MSE = np.sum((X_ @ w - y_) ** 2) / len(X_)
-        return 0.5*MSE
+        return 0.5 * MSE
 
     def _grad(self, X, y, w):
         X_, y_ = self.subsample(X, y)

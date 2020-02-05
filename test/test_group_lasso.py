@@ -22,20 +22,22 @@ def test_l1_prox(reg):
             assert yi == 0
 
 
-@pytest.mark.parametrize(("reg", "n_per_group"), product(np.logspace(-3, 1, 10), [2, 3, 5]))
+@pytest.mark.parametrize(
+    ("reg", "n_per_group"), product(np.logspace(-3, 1, 10), [2, 3, 5])
+)
 def test_group_l2_prox(reg, n_per_group):
-    x = np.random.randn(50*n_per_group)
-    groups = [
-        np.zeros(x.shape, dtype=np.bool) for _ in range(50)
-    ]
+    x = np.random.randn(50 * n_per_group)
+    groups = [np.zeros(x.shape, dtype=np.bool) for _ in range(50)]
     for i, group in enumerate(groups):
-        group[i*n_per_group:(i+1)*n_per_group] = True
-    y = _group_lasso._group_l2_prox(x, [reg]*len(groups), groups)
+        group[i * n_per_group : (i + 1) * n_per_group] = True
+    y = _group_lasso._group_l2_prox(x, [reg] * len(groups), groups)
     for group in groups:
         xi = x[group]
         yi = y[group]
         if np.linalg.norm(xi) > reg:
-            assert np.linalg.norm(yi) == pytest.approx(np.linalg.norm(xi) - reg)
+            assert np.linalg.norm(yi) == pytest.approx(
+                np.linalg.norm(xi) - reg
+            )
         else:
             assert np.linalg.norm(yi) == pytest.approx(0)
 
@@ -45,7 +47,10 @@ class BaseTestGroupLasso:
     UnregularisedMLFitter = None
     num_rows = 200
     num_cols = 30
-    configs = [{"n_iter": 1000, "fit_intercept": False}, {"n_iter": 1000, "fit_intercept": True}]
+    configs = [
+        {"n_iter": 1000, "fit_intercept": False},
+        {"n_iter": 1000, "fit_intercept": True},
+    ]
 
     def all_configs(self, gl):
         for config in self.configs:
@@ -72,25 +77,32 @@ class BaseTestGroupLasso:
         gl = gl_no_reg
         gl._init_fit(X, y, lipschitz=None)
         assert gl._regulariser(w) == 0
-        
+
         reg = 0.1
         gl.l1_reg = reg
-        w2 = np.concatenate((w[0:1, :]*0, w))
-        assert gl._regulariser(w2) == np.linalg.norm(w.ravel(), 1)*reg
+        w2 = np.concatenate((w[0:1, :] * 0, w))
+        assert gl._regulariser(w2) == np.linalg.norm(w.ravel(), 1) * reg
 
         gl.groups = np.arange(len(w.ravel())).reshape(w.shape)
         gl.group_reg = reg
         gl._init_fit(X, y, lipschitz=None)
-        assert gl._regulariser(w2) == pytest.approx(2*np.linalg.norm(w.ravel(), 1)*reg)
+        assert gl._regulariser(w2) == pytest.approx(
+            2 * np.linalg.norm(w.ravel(), 1) * reg
+        )
 
-        gl.groups = np.concatenate([np.arange(len(w.ravel())/2)]*2).reshape(w.shape)
+        gl.groups = np.concatenate(
+            [np.arange(len(w.ravel()) / 2)] * 2
+        ).reshape(w.shape)
         gl.group_reg = reg
         gl._init_fit(X, y, lipschitz=None)
         regulariser = 0
         for group in np.unique(gl.groups):
-            regulariser += reg*np.sqrt(2)*np.linalg.norm(w[gl.groups == group])
-        assert gl._regulariser(w2) == pytest.approx(regulariser + np.linalg.norm(w.ravel(), 1)*reg)
-
+            regulariser += (
+                reg * np.sqrt(2) * np.linalg.norm(w[gl.groups == group])
+            )
+        assert gl._regulariser(w2) == pytest.approx(
+            regulariser + np.linalg.norm(w.ravel(), 1) * reg
+        )
 
     def test_lipschits(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
@@ -140,9 +152,7 @@ class BaseTestGroupLasso:
 
             assert np.allclose(yhat1, yhat2)
 
-    def test_high_group_sparsity_yields_zero_coefficients(
-        self, ml_problem
-    ):
+    def test_high_group_sparsity_yields_zero_coefficients(self, ml_problem):
         X, y, w = ml_problem
         reg = 10000
         gl_reg = self.MLFitter(group_reg=reg)
@@ -150,9 +160,7 @@ class BaseTestGroupLasso:
             gl.fit(X, y)
             assert np.allclose(gl.coef_, 0)
 
-    def test_high_group_sparsity_yields_zero_coefficients(
-        self, ml_problem
-    ):
+    def test_high_group_sparsity_yields_zero_coefficients(self, ml_problem):
         X, y, w = ml_problem
         groups = np.random.randint(0, 10, w.shape)
         reg = 10000
@@ -161,9 +169,7 @@ class BaseTestGroupLasso:
             gl.fit(X, y)
             assert np.allclose(gl.coef_, 0)
 
-    def test_high_l1_sparsity_yields_zero_coefficients(
-        self, ml_problem
-    ):
+    def test_high_l1_sparsity_yields_zero_coefficients(self, ml_problem):
         X, y, w = ml_problem
         groups = np.random.randint(0, 10, w.shape)
         reg = 10000
@@ -172,9 +178,7 @@ class BaseTestGroupLasso:
             gl.fit(X, y)
             assert np.allclose(gl.coef_, 0)
 
-    def test_negative_groups_are_ignored(
-        self, ml_problem
-    ):
+    def test_negative_groups_are_ignored(self, ml_problem):
         X, y, w = ml_problem
         groups = np.random.randint(-1, 10, w.shape)
         reg = 10000
@@ -187,9 +191,7 @@ class BaseTestGroupLasso:
             assert not np.any(np.abs(nonzero) < 1e-10)
             assert np.allclose(zero, 0)
 
-    def test_fit_transform_equals_fit_and_transform(
-        self, ml_problem
-    ):
+    def test_fit_transform_equals_fit_and_transform(self, ml_problem):
         X, y, w = ml_problem
         groups = np.random.randint(0, 10, w.shape)
         reg = 0.01
@@ -204,9 +206,7 @@ class BaseTestGroupLasso:
             assert yhat1.shape == yhat2.shape
             assert np.allclose(yhat1, yhat2)
 
-    def test_fit_transform_yields_empty_with_high_reg(
-        self, ml_problem
-    ):
+    def test_fit_transform_yields_empty_with_high_reg(self, ml_problem):
         X, y, w = ml_problem
         groups = np.random.randint(0, 10, w.shape)
         reg = 10000
