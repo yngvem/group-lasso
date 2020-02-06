@@ -25,7 +25,7 @@ def _subsampled_power_iteration(X, v, subsampling_scheme, random_state):
         v,
         s
         / subsampling_fraction(
-            len(X), subsampling_scheme, random_state=random_state
+            X.shape[0], subsampling_scheme, random_state=random_state
         ),
     )
 

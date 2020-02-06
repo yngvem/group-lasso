@@ -59,7 +59,7 @@ def subsample(subsampling_scheme, *Xs, random_state):
     if subsampling_scheme == 1:
         return _extract_from_singleton_iterable(Xs)
 
-    num_rows = len(Xs[0])
+    num_rows = Xs[0].shape[0]
     inds = _get_random_row_idxes(
         num_rows, subsampling_scheme, random_state=random_state
     )

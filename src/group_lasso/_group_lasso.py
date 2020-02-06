@@ -5,6 +5,7 @@ import warnings
 
 import numpy.linalg as la
 import numpy as np
+from scipy import sparse
 from sklearn.utils import (
     check_random_state,
     check_array,
@@ -77,7 +78,9 @@ def _join_intercept(b, w):
 
 def _add_intercept_col(X):
     ones = np.ones([X.shape[0], 1])
-    return np.concatenate([ones, X], axis=1)
+    if sparse.issparse(X):
+        return sparse.hstack((ones, X))        
+    return np.hstack([ones, X])
 
 
 class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
@@ -337,20 +340,22 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """Ensure that the inputs are valid and prepare them for fit.
         """
         check_consistent_length(X, y)
-        check_array(X)
-        check_array(y)
+        X = check_array(X, accept_sparse=True)
+        y = check_array(y)
         if len(y.shape) == 1:
             y = y.reshape(-1, 1)
 
         # Add the intercept column and compute Lipschitz bound the correct way
         if self.fit_intercept:
             X = _add_intercept_col(X)
+            X = check_array(X, accept_sparse='csr')
 
         if lipschitz is None:
             lipschitz = self._compute_lipschitz(X, y)
 
         if not self.fit_intercept:
             X = _add_intercept_col(X)
+            X = check_array(X, accept_sparse='csr')
 
         return X, y, lipschitz
 
@@ -405,6 +410,8 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def transform(self, X):
         """Remove columns corresponding to zero-valued coefficients.
         """
+        if sparse.issparse(X):
+            X = check_array(X, accept_sparse='csc')
         return X[:, self.sparsity_mask]
 
     def fit_transform(self, X, y, lipschitz=None):
@@ -554,13 +561,13 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
 
     def _unregularised_loss(self, X, y, w):
         X_, y_ = self.subsample(X, y)
-        MSE = np.sum((X_ @ w - y_) ** 2) / len(X_)
+        MSE = np.sum((X_ @ w - y_) ** 2) / X_.shape[0]
         return 0.5 * MSE
 
     def _grad(self, X, y, w):
         X_, y_ = self.subsample(X, y)
         SSE_grad = _l2_grad(X_, y_, w)
-        return SSE_grad / len(X_)
+        return SSE_grad / X_.shape[0]
 
     def _compute_lipschitz(self, X, y):
         num_rows, num_cols = X.shape
@@ -631,15 +638,15 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
 
     def _unregularised_loss(self, X, y, w):
         X_, y_ = self.subsample(X, y)
-        return _logistic_cross_entropy(X_, y_, w).sum() / len(X)
+        return _logistic_cross_entropy(X_, y_, w).sum() / X.shape[0]
 
     def _grad(self, X, y, w):
         X_, y_ = self.subsample(X, y)
         p = _logistic_proba(X_, w)
-        return X_.T @ (p - y_) / len(X_)
+        return X_.T @ (p - y_) / X_.shape[0]
 
     def _compute_lipschitz(self, X, y):
-        return np.sqrt(12) * np.linalg.norm(X, "fro") / len(X)
+        return np.sqrt(12) * np.linalg.norm(X, "fro") / X.shape[0]
 
     def predict_proba(self, X):
         return _logistic_proba(X, self.coef_)
@@ -798,18 +805,18 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
     def _unregularised_loss(self, X, y, w):
         y = _one_hot_encode(y)
         X_, y_ = self.subsample(X, y)
-        return _softmax_cross_entropy(X_, y_, w).sum() / len(X)
+        return _softmax_cross_entropy(X_, y_, w).sum() / X.shape[0]
 
     def _grad(self, X, y, w):
         y = _one_hot_encode(y)
         X_, y_ = self.subsample(X, y)
         p = _softmax_proba(X_, w)
 
-        return X_.T @ (p - y_) / len(X_)
+        return X_.T @ (p - y_) / X_.shape[0]
 
     def _compute_lipschitz(self, X, y):
         C = y.shape[-1]
-        return 2 * C ** (1 / 4) * np.linalg.norm(X, "fro") / len(X)
+        return 2 * C ** (1 / 4) * np.linalg.norm(X, "fro") / X.shape[0]
 
     def predict_proba(self, X):
         return _softmax_proba(X, self.coef_)
