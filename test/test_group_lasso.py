@@ -4,6 +4,7 @@ from itertools import product
 import numpy as np
 import numpy.linalg as la
 import pytest
+from scipy import sparse
 from sklearn.linear_model import LinearRegression, LogisticRegression
 
 from group_lasso import _group_lasso
@@ -69,6 +70,10 @@ class BaseTestGroupLasso:
     def ml_problem(self):
         raise NotImplementedError
 
+    @pytest.fixture
+    def sparse_ml_problem(self):
+        raise NotImplementedError
+
     def random_weights(self):
         return np.random.standard_normal((self.num_cols, 1))
 
@@ -119,6 +124,22 @@ class BaseTestGroupLasso:
 
                 assert la.norm(g1 - g2) <= L * la.norm(w - w2)
 
+    def test_lipschits_sparse(self, gl_no_reg, sparse_ml_problem):
+        X, y, w = sparse_ml_problem
+        X = X.toarray()
+
+        for gl in self.all_configs(gl_no_reg):
+            gl._init_fit(X, y, lipschitz=None)
+            L = gl._compute_lipschitz(X, y)
+
+            g1 = gl._grad(X, y, w)
+            for i in range(100):
+                w2 = self.random_weights() * i
+
+                g2 = gl._grad(X, y, w2)
+
+                assert la.norm(g1 - g2) <= L * la.norm(w - w2)
+
     def test_grad(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
         shape = w.shape
@@ -150,7 +171,30 @@ class BaseTestGroupLasso:
             sklearn_no_reg.fit(X, y)
             yhat2 = sklearn_no_reg.predict(X).reshape(yhat1.shape)
 
-            assert np.allclose(yhat1, yhat2)
+            th = 0.01
+            pred_diff = (yhat1.astype(float) - yhat2.astype(float))
+            if np.linalg.norm(pred_diff, 1)/y.shape[0] > th:
+                diff_gl = np.linalg.norm(yhat1.astype(float) - y.astype(float))
+                diff_sk = np.linalg.norm(yhat2.astype(float) - y.astype(float))
+                assert diff_gl < diff_sk
+
+    def test_unregularised_sparse_fit_equal_sklearn(
+        self, gl_no_reg, sklearn_no_reg, sparse_ml_problem
+    ):
+        X, y, w = sparse_ml_problem
+        sklearn_no_reg.n_iter = 1000
+        sklearn_no_reg.tol = 1e-10
+        for gl in self.all_configs(gl_no_reg):
+            yhat1 = gl.fit_predict(X, y)
+            sklearn_no_reg.fit(X, y)
+            yhat2 = sklearn_no_reg.predict(X).reshape(yhat1.shape)
+            
+            th = 0.01
+            pred_diff = (yhat1.astype(float) - yhat2.astype(float))
+            if np.linalg.norm(pred_diff, 1)/y.shape[0] > th:
+                diff_gl = np.linalg.norm(yhat1.astype(float) - y.astype(float)) 
+                diff_sk = np.linalg.norm(yhat2.astype(float) - y.astype(float)) 
+                assert diff_gl < diff_sk
 
     def test_high_group_sparsity_yields_zero_coefficients(self, ml_problem):
         X, y, w = ml_problem
@@ -158,7 +202,7 @@ class BaseTestGroupLasso:
         gl_reg = self.MLFitter(group_reg=reg)
         for gl in self.all_configs(gl_reg):
             gl.fit(X, y)
-            assert np.allclose(gl.coef_, 0)
+            np.testing.assert_allclose(gl.coef_, 0)
 
     def test_high_group_sparsity_yields_zero_coefficients(self, ml_problem):
         X, y, w = ml_problem
@@ -167,7 +211,7 @@ class BaseTestGroupLasso:
         gl_reg = self.MLFitter(group_reg=reg, l1_reg=0, groups=groups)
         for gl in self.all_configs(gl_reg):
             gl.fit(X, y)
-            assert np.allclose(gl.coef_, 0)
+            np.testing.assert_allclose(gl.coef_, 0)
 
     def test_high_l1_sparsity_yields_zero_coefficients(self, ml_problem):
         X, y, w = ml_problem
@@ -176,7 +220,7 @@ class BaseTestGroupLasso:
         gl_reg = self.MLFitter(group_reg=0, l1_reg=reg, groups=groups)
         for gl in self.all_configs(gl_reg):
             gl.fit(X, y)
-            assert np.allclose(gl.coef_, 0)
+            np.testing.assert_allclose(gl.coef_, 0)
 
     def test_negative_groups_are_ignored(self, ml_problem):
         X, y, w = ml_problem
@@ -189,7 +233,7 @@ class BaseTestGroupLasso:
             zero = gl.coef_[groups != -1]
 
             assert not np.any(np.abs(nonzero) < 1e-10)
-            assert np.allclose(zero, 0)
+            np.testing.assert_allclose(zero, 0)
 
     def test_fit_transform_equals_fit_and_transform(self, ml_problem):
         X, y, w = ml_problem
@@ -229,6 +273,13 @@ class TestGroupLasso(BaseTestGroupLasso):
         y = X @ w
         return X, y, w
 
+    @pytest.fixture
+    def sparse_ml_problem(self):
+        X = sparse.random(self.num_rows, self.num_cols, random_state=0)
+        w = self.random_weights()
+        y = X @ w
+        return X, y, w
+
 
 class TestLogisticGroupLasso(BaseTestGroupLasso):
     MLFitter = _group_lasso.LogisticGroupLasso
@@ -238,6 +289,17 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
     def ml_problem(self):
         np.random.seed(0)
         X = np.random.standard_normal((self.num_rows, self.num_cols))
+        w = self.random_weights()
+        y = _group_lasso._sigmoid(X @ w) > 0.5
+        return X, y, w
+
+    @pytest.fixture
+    def sparse_ml_problem(self):
+        X = sparse.random(self.num_rows, self.num_cols, random_state=0)
+        X = sparse.dok_matrix(X)
+        for row in range(self.num_rows):
+            col = np.random.randint(self.num_cols)
+            X[row, col] = np.random.standard_normal()
         w = self.random_weights()
         y = _group_lasso._sigmoid(X @ w) > 0.5
         return X, y, w
@@ -266,6 +328,17 @@ class TestMultinomialGroupLasso(BaseTestGroupLasso):
     def ml_problem(self):
         np.random.seed(0)
         X = np.random.standard_normal((self.num_rows, self.num_cols))
+        w = self.random_weights()
+        y = np.argmax(_group_lasso._sigmoid(X @ w), axis=1)
+        return X, y, w
+
+    @pytest.fixture
+    def sparse_ml_problem(self):
+        X = sparse.random(self.num_rows, self.num_cols, random_state=0)
+        X = sparse.dok_matrix(X)
+        for row in range(self.num_rows):
+            col = np.random.randint(self.num_cols)
+            X[row, col] = np.random.standard_normal()
         w = self.random_weights()
         y = np.argmax(_group_lasso._sigmoid(X @ w), axis=1)
         return X, y, w
