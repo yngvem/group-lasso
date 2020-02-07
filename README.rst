@@ -216,11 +216,11 @@ Group lasso regression can also be used as a transformer
     This is very low since the regularisation is so high.
     The R^2 statistic for the pipeline is: 0.72
 
------------
+------------
 Further work
------------
+------------
 
-1. Test the code with sparse arrays
+1. Fully test with sparse arrays and make examples
 2. Make it easier to work with categorical data
 3. Poisson regression
 
