@@ -340,7 +340,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """Ensure that the inputs are valid and prepare them for fit.
         """
         check_consistent_length(X, y)
-        X = check_array(X, accept_sparse=True)
+        X = check_array(X, accept_sparse='csr')
         y = check_array(y)
         if len(y.shape) == 1:
             y = y.reshape(-1, 1)
@@ -572,7 +572,9 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
     def _compute_lipschitz(self, X, y):
         num_rows, num_cols = X.shape
         if self.frobenius_lipchitz:
-            return la.norm(X, "fro") ** 2 / (num_rows)
+            if sparse.issparse(X):
+                return sparse.linalg.norm(X, "fro")**2/num_rows
+            return la.norm(X, "fro") ** 2 / num_rows
 
         s_max = find_largest_singular_value(
             X,
@@ -646,7 +648,11 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         return X_.T @ (p - y_) / X_.shape[0]
 
     def _compute_lipschitz(self, X, y):
-        return np.sqrt(12) * np.linalg.norm(X, "fro") / X.shape[0]
+        if sparse.issparse(X):
+            norm = sparse.linalg.norm(X, "fro")
+        else:
+            norm = la.norm(X, "fro")
+        return np.sqrt(12) * norm / X.shape[0]
 
     def predict_proba(self, X):
         return _logistic_proba(X, self.coef_)
@@ -815,8 +821,13 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
         return X_.T @ (p - y_) / X_.shape[0]
 
     def _compute_lipschitz(self, X, y):
+        if sparse.issparse(X):
+            norm = sparse.linalg.norm(X, "fro")
+        else:
+            norm = la.norm(X, "fro")
+
         C = y.shape[-1]
-        return 2 * C ** (1 / 4) * np.linalg.norm(X, "fro") / X.shape[0]
+        return 2 * C ** (1 / 4) * norm / X.shape[0]
 
     def predict_proba(self, X):
         return _softmax_proba(X, self.coef_)
@@ -831,7 +842,7 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
         """
         y = _one_hot_encode(y)
         check_consistent_length(X, y)
-        check_array(X)
+        X = check_array(X, accept_sparse='csr')
         check_array(y, ensure_2d=False)
         if set(np.unique(y)) != {0, 1}:
             raise ValueError(
@@ -842,11 +853,13 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
         # Add the intercept column and compute Lipschitz bound the correct way
         if self.fit_intercept:
             X = _add_intercept_col(X)
+            X = check_array(X, accept_sparse='csr')
 
         if lipschitz is None:
             lipschitz = self._compute_lipschitz(X, y)
 
         if not self.fit_intercept:
             X = _add_intercept_col(X)
+            X = check_array(X, accept_sparse='csr')
 
         return X, y, lipschitz
