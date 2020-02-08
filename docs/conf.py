@@ -26,7 +26,7 @@ author = "Yngve Mardal Moe"
 # The short X.Y version
 version = ""
 # The full version, including alpha/beta/rc tags
-release = "1.2.1"
+release = "1.2.2"
 
 
 # -- General configuration ---------------------------------------------------
@@ -43,6 +43,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
+    "sphinx_gallery.gen_gallery",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -108,6 +109,13 @@ html_static_path = ["_static"]
 # Output file base name for HTML help builder.
 htmlhelp_basename = "GroupLassodoc"
 
+
+# -- Options for gallery
+sphinx_gallery_conf = {
+     'examples_dirs': '../examples',   # path to your example scripts
+     'gallery_dirs': 'auto_examples',  # path to where to save gallery generated output
+     'filename_pattern': '/example_',
+}
 
 # -- Options for LaTeX output ------------------------------------------------
 
