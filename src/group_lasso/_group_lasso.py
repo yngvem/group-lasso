@@ -479,6 +479,8 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         frobenius_lipschitz=False,
         random_state=None,
         warm_start=False,
+        old_regularisation=False,
+        supress_warning=False,
     ):
         """
 
@@ -536,6 +538,8 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
             fit_intercept=fit_intercept,
             random_state=random_state,
             warm_start=warm_start,
+            old_regularisation=old_regularisation,
+            supress_warning=supress_warning,
         )
         self.frobenius_lipchitz = frobenius_lipschitz
 
@@ -742,6 +746,8 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
         fit_intercept=True,
         random_state=None,
         warm_start=False,
+        old_regularisation=False,
+        supress_warning=False,
     ):
         """
 
@@ -803,6 +809,8 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
             fit_intercept=fit_intercept,
             random_state=random_state,
             warm_start=warm_start,
+            old_regularisation=old_regularisation,
+            supress_warning=supress_warning,
         )
 
     def _compute_proba(self, X, w):
