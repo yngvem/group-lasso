@@ -114,7 +114,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         self,
         groups,
         group_reg=0.05,
-        l1_reg=0.05,
+        l1_reg=0.00,
         n_iter=100,
         tol=1e-5,
         subsampling_scheme=None,
