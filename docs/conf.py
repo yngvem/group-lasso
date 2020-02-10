@@ -43,6 +43,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
+    "numpydoc",
     "sphinx_gallery.gen_gallery",
 ]
 
