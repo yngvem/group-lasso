@@ -1,6 +1,9 @@
 API Reference
 =============
 
+Group Lasso regularised estimators
+----------------------------------
+
 .. autoclass:: group_lasso.GroupLasso
     :inherited-members:
 
@@ -10,3 +13,9 @@ API Reference
 .. autoclass:: group_lasso.MultinomialGroupLasso
     :inherited-members:
 
+
+Utilities for group lasso
+--------------------------
+
+.. automodule:: group_lasso.utils
+    :members: extract_ohe_groups
