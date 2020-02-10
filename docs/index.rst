@@ -107,7 +107,7 @@ corresponding to zero-valued coefficients.
    :caption: Contents:
    
    installation
-   examples
+   auto_examples/index
    maths
    api_reference
    
