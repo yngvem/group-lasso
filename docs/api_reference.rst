@@ -10,9 +10,6 @@ Group Lasso regularised estimators
 .. autoclass:: group_lasso.LogisticGroupLasso
     :inherited-members:
 
-.. autoclass:: group_lasso.MultinomialGroupLasso
-    :inherited-members:
-
 
 Utilities for group lasso
 --------------------------

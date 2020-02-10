@@ -300,41 +300,6 @@ class TestGroupLasso(BaseTestGroupLasso):
 class TestLogisticGroupLasso(BaseTestGroupLasso):
     MLFitter = _group_lasso.LogisticGroupLasso
     UnregularisedMLFitter = LogisticRegression
-
-    @pytest.fixture
-    def ml_problem(self):
-        np.random.seed(0)
-        X = np.random.standard_normal((self.num_rows, self.num_cols))
-        w = self.random_weights()
-        y = _group_lasso._sigmoid(X @ w) > 0.5
-        return X, y, w
-
-    @pytest.fixture
-    def sparse_ml_problem(self):
-        X = sparse.random(self.num_rows, self.num_cols, random_state=0)
-        X = sparse.dok_matrix(X)
-        for row in range(self.num_rows):
-            col = np.random.randint(self.num_cols)
-            X[row, col] = np.random.standard_normal()
-        w = self.random_weights()
-        y = _group_lasso._sigmoid(X @ w) > 0.5
-        return X, y, w
-
-    def test_unregularised_fit_equal_sklearn(
-        self, gl_no_reg, sklearn_no_reg, ml_problem
-    ):
-        X, y, w = ml_problem
-        for gl in self.all_configs(gl_no_reg):
-            yhat1 = gl.fit_predict(X, y)
-            sklearn_no_reg.fit(X, y)
-            yhat2 = sklearn_no_reg.predict(X)
-
-            assert np.mean(yhat1.astype(float) - yhat2.astype(float)) < 5e-2
-
-
-class TestMultinomialGroupLasso(BaseTestGroupLasso):
-    MLFitter = _group_lasso.MultinomialGroupLasso
-    UnregularisedMLFitter = LogisticRegression
     num_classes = 5
 
     def random_weights(self):
@@ -345,7 +310,7 @@ class TestMultinomialGroupLasso(BaseTestGroupLasso):
         np.random.seed(0)
         X = np.random.standard_normal((self.num_rows, self.num_cols))
         w = self.random_weights()
-        y = np.argmax(_group_lasso._sigmoid(X @ w), axis=1)
+        y = np.argmax(_group_lasso._softmax(X @ w), axis=1)
         return X, y, w
 
     @pytest.fixture
@@ -356,7 +321,7 @@ class TestMultinomialGroupLasso(BaseTestGroupLasso):
             col = np.random.randint(self.num_cols)
             X[row, col] = np.random.standard_normal()
         w = self.random_weights()
-        y = np.argmax(_group_lasso._sigmoid(X @ w), axis=1)
+        y = np.argmax(_group_lasso._softmax(X @ w), axis=1)
         return X, y, w
 
     def test_unregularised_fit_equal_sklearn(
