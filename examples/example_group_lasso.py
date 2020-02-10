@@ -9,13 +9,13 @@ A sample script for group lasso regression
 # Setup
 # -----
 
-from group_lasso import GroupLasso
+import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.linear_model import Ridge
 from sklearn.metrics import r2_score
 from sklearn.pipeline import Pipeline
-import numpy as np
-import matplotlib.pyplot as plt
 
+from group_lasso import GroupLasso
 
 np.random.seed(0)
 GroupLasso.LOG_LOSSES = True
@@ -74,10 +74,18 @@ R2_best = r2_score(y, y_true)
 
 
 ###############################################################################
-# Generate pipeline and train it
-# ------------------------------
+# Generate estimator and train it
+# -------------------------------
 gl = GroupLasso(
-    groups=groups, group_reg=1.3, subsampling_scheme=1, supress_warning=True,
+    groups=groups,
+    group_reg=5,
+    l1_reg=0,
+    frobenius_lipschitz=True,
+    scale_reg="inverse_group_size",
+    subsampling_scheme=1,
+    supress_warning=True,
+    n_iter=1000,
+    tol=1e-3,
 )
 
 gl.fit(X, y)

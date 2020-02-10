@@ -10,13 +10,13 @@ for variable selection in a scikit-learn pipeline.
 # Setup
 # -----
 
-from group_lasso import GroupLasso
+import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.linear_model import Ridge
 from sklearn.metrics import r2_score
 from sklearn.pipeline import Pipeline
-import numpy as np
-import matplotlib.pyplot as plt
 
+from group_lasso import GroupLasso
 
 np.random.seed(0)
 
@@ -83,7 +83,9 @@ pipe = Pipeline(
             "variable_selection",
             GroupLasso(
                 groups=groups,
-                group_reg=1.3,
+                group_reg=20,
+                l1_reg=0,
+                scale_reg="inverse_group_size",
                 subsampling_scheme=1,
                 supress_warning=True,
             ),

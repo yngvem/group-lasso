@@ -9,12 +9,12 @@ A sample script for group lasso regression
 # Setup
 # -----
 
-from group_lasso import LogisticGroupLasso
+import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.linear_model import Ridge
 from sklearn.pipeline import Pipeline
-import numpy as np
-import matplotlib.pyplot as plt
 
+from group_lasso import LogisticGroupLasso
 
 np.random.seed(0)
 LogisticGroupLasso.LOG_LOSSES = True
@@ -63,7 +63,6 @@ p_true = 1 / (1 + np.exp(-y_true))
 c = np.random.binomial(1, p_true)
 
 
-
 ###############################################################################
 # View noisy data and compute maximum accuracy
 # --------------------------------------------
@@ -80,7 +79,12 @@ best_accuracy = ((p_true > 0.5) == c).mean()
 # Generate estimator and train it
 # -------------------------------
 gl = LogisticGroupLasso(
-    groups=groups, group_reg=0.005, subsampling_scheme=1, supress_warning=True,
+    groups=groups,
+    group_reg=0.05,
+    l1_reg=0,
+    scale_reg="inverse_group_size",
+    subsampling_scheme=1,
+    supress_warning=True,
 )
 
 gl.fit(X, c)
@@ -109,8 +113,12 @@ print(f"Accuracy: {accuracy}, best possible accuracy = {best_accuracy}")
 # ---------------------------------
 for i in range(w.shape[1]):
     plt.figure()
-    plt.plot(w[:, i]/np.linalg.norm(w[:, i]), ".", label="True weights")
-    plt.plot(gl.coef_[:, i]/np.linalg.norm(gl.coef_[:, i]), ".", label="Estimated weights")
+    plt.plot(w[:, i] / np.linalg.norm(w[:, i]), ".", label="True weights")
+    plt.plot(
+        gl.coef_[:, i] / np.linalg.norm(gl.coef_[:, i]),
+        ".",
+        label="Estimated weights",
+    )
 
 plt.figure()
 plt.plot([w.min(), w.max()], [gl.coef_.min(), gl.coef_.max()], "gray")
