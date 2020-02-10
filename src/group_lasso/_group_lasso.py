@@ -198,7 +198,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         regulariser += self.l1_reg * la.norm(w.ravel(), 1)
         return regulariser
 
-    def _get_reg_strength(self, group):
+    def _get_reg_strength(self, group, reg):
         """Get the regularisation coefficient for one group.
         """
         scale_reg = str(self.scale_reg).lower()
@@ -213,13 +213,13 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
                 "``scale_reg`` must be equal to \"group_size\","
                 " \"inverse_group_size\" or \"none\""
             )
-        return self.group_reg*scale
+        return reg*scale
 
     def _get_reg_vector(self, reg): 
         """Get the group-wise regularisation coefficients from ``reg``.
         """
         if isinstance(reg, Number):
-            reg = [self._get_reg_strength(group) for group in self.groups_]
+            reg = [self._get_reg_strength(group, reg) for group in self.groups_]
         else:
             reg = list(reg)
         return reg
