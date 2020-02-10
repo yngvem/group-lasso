@@ -117,6 +117,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         l1_reg=0.05,
         n_iter=100,
         tol=1e-5,
+        scale_reg="group_size",
         subsampling_scheme=None,
         fit_intercept=True,
         random_state=None,
@@ -148,6 +149,17 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         tol : float [default=1e-5]
             The convergence tolerance. The optimisation algorithm
             will stop once ||x_{n+1} - x_n|| < ``tol``.
+        scale_reg : str [in {"group_size", "none", "inverse_group_size"] or None 
+            How to scale the group-wise regularisation coefficients. In the
+            original group lasso paper scaled the regularisation by the square
+            root of the elements in each group so that each variable has the
+            same effect on the regularisation. This is not sensible for dummy
+            encoded variables, as these always have either unit or zero norm.
+            ``scale_reg`` should therefore be None if all variables are dummy
+            variables. Finally, if the group size shouldn't be considered when
+            choosing variables, then inverse_group_size should be used instead
+            as that divide by the square root of the group size, removing the
+            dependence of group size on the regularisation strength.
         subsampling_scheme : None, float, int or str [default=None]
             The subsampling rate used for the gradient and singular value
             computations. If it is a float, then it specifies the fraction
@@ -172,6 +184,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """
         self.groups = groups
         self.group_reg = group_reg
+        self.scale_reg = scale_reg
         self.l1_reg = l1_reg
         self.n_iter = n_iter
         self.tol = tol
@@ -195,11 +208,28 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         regulariser += self.l1_reg * la.norm(w.ravel(), 1)
         return regulariser
 
-    def _get_reg_vector(self, reg):
+    def _get_reg_strength(self, group):
+        """Get the regularisation coefficient for one group.
+        """
+        scale_reg = str(self.scale_reg).lower()
+        if scale_reg == "group_size":
+            scale = sqrt(group.sum())
+        elif scale_reg == "none":
+            scale = 1
+        elif scale_reg == "inverse_group_size":
+            scale = 1/sqrt(group.sum())
+        else:
+            raise ValueError(
+                "``scale_reg`` must be equal to \"group_size\","
+                " \"inverse_group_size\" or \"none\""
+            )
+        return self.group_reg*scale
+
+    def _get_reg_vector(self, reg): 
         """Get the group-wise regularisation coefficients from ``reg``.
         """
         if isinstance(reg, Number):
-            reg = [reg * sqrt(group.sum()) for group in self.groups_]
+            reg = [self._get_reg_strength(group) for group in self.groups_]
         else:
             reg = list(reg)
         return reg
@@ -474,6 +504,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         l1_reg=0.05,
         n_iter=100,
         tol=1e-5,
+        scale_reg="group_size",
         subsampling_scheme=None,
         fit_intercept=True,
         frobenius_lipschitz=False,
@@ -534,6 +565,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
             group_reg=group_reg,
             n_iter=n_iter,
             tol=tol,
+            scale_reg=scale_reg,
             subsampling_scheme=subsampling_scheme,
             fit_intercept=fit_intercept,
             random_state=random_state,
@@ -742,6 +774,7 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
         l1_reg=0.05,
         n_iter=100,
         tol=1e-5,
+        scale_reg="group_size",
         subsampling_scheme=None,
         fit_intercept=True,
         random_state=None,
@@ -805,6 +838,7 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
             l1_reg=l1_reg,
             n_iter=n_iter,
             tol=tol,
+            scale_reg=scale_reg,
             subsampling_scheme=subsampling_scheme,
             fit_intercept=fit_intercept,
             random_state=random_state,
