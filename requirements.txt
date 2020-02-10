@@ -4,3 +4,5 @@ pytest
 pytest-cov
 pytest-randomly
 tox
+sphinx_rtd_theme
+sphinx_gallery
