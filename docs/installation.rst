@@ -5,12 +5,8 @@ Dependencies
 ------------
 
 ``group-lasso`` support Python 3.5+, Additionally, you will need ``numpy``,
-and ``scikit-learn`` (which again requires ``scipy`` and ``joblib``). These
-packages should come pre-installed on any Anaconda installation, otherwise,
-they can be installed using ``pip``::
-
-    pip install numpy
-    pip install scikit-learn
+``scikit-learn`` and ``scipy``. Hosever, these packages should be installed
+automatically when installing this codebase. 
 
 Installing group-lasso
 ----------------------
@@ -20,8 +16,8 @@ pip install::
 
     pip install group-lasso
 
-I update the Pypi version regularly, however for the latest update, you should
-clone from GitHub and install it directly, as so::
+The Pypi version is updated regularly, however for the latest update, you
+should clone from GitHub and install it directly.::
 
     git clone https://github.com/yngvem/group-lasso.git
     cd group-lasso
