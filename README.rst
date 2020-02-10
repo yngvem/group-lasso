@@ -77,8 +77,6 @@ You can read the full documentation on
 Examples
 --------
 
-You can read the full documentation on 
-`readthedocs <https://group-lasso.readthedocs.io/en/latest/maths.html>`_.
 There are several examples that show usage of the library
 `here <https://group-lasso.readthedocs.io/en/latest/auto_examples/index.html>`_.
 
