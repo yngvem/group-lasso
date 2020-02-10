@@ -84,13 +84,13 @@ class BaseTestGroupLasso:
         y = np.random.randint(0, 2, (100, 2))
         gl.scale_reg = "group_size"
         gl._init_fit(X, y, 1)
-        assert gl.group_reg_vector_ == [np.sqrt(3), np.sqrt(2), 1]
+        assert gl.group_reg_vector_ == pytest.approx([np.sqrt(3), np.sqrt(2), 1])
         gl.scale_reg = None
         gl._init_fit(X, y, 1)
-        assert gl.group_reg_vector_ == [1]*3
+        assert gl.group_reg_vector_ == pytest.approx([1]*3)
         gl.scale_reg = "inverse_group_size"
         gl._init_fit(X, y, 1)
-        assert gl.group_reg_vector_ == [1/np.sqrt(3), 1/np.sqrt(2), 1]
+        assert gl.group_reg_vector_ == pytest.approx([1/np.sqrt(3), 1/np.sqrt(2), 1])
 
 
     def test_reg_is_correct(self, gl_no_reg, ml_problem):
