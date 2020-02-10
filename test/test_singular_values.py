@@ -4,7 +4,6 @@ import pytest
 
 from group_lasso import _singular_values
 
-
 np.random.seed(0)
 TOL = 0.1
 SUBSAMPLED_TOL = 0.1

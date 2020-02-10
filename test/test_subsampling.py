@@ -1,6 +1,7 @@
-import pytest
-from group_lasso import _subsampling
 import numpy as np
+import pytest
+
+from group_lasso import _subsampling
 
 
 @pytest.fixture

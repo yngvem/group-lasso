@@ -1,6 +1,7 @@
-import numpy.linalg as la
-from math import sqrt
 import warnings
+from math import sqrt
+
+import numpy.linalg as la
 
 
 def _fista_momentum(momentum):
