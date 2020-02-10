@@ -77,6 +77,22 @@ class BaseTestGroupLasso:
     def random_weights(self):
         return np.random.standard_normal((self.num_cols, 1))
 
+    def test_regularisation_is_scaled_correctly(self):
+        groups = [1, 1, 1, 2, 2, 3]
+        gl = self.MLFitter(group_reg=1, groups=groups, n_iter=2)
+        X = np.random.randn(100, 6)
+        y = np.random.randint(0, 2, (100, 2))
+        gl.scale_reg = "group_size"
+        gl._init_fit(X, y, 1)
+        assert gl.group_reg_vector_ == [np.sqrt(3), np.sqrt(2), 1]
+        gl.scale_reg = None
+        gl._init_fit(X, y, 1)
+        assert gl.group_reg_vector_ == [1]*3
+        gl.scale_reg = "inverse_group_size"
+        gl._init_fit(X, y, 1)
+        assert gl.group_reg_vector_ == [1/np.sqrt(3), 1/np.sqrt(2), 1]
+
+
     def test_reg_is_correct(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
         gl = gl_no_reg
