@@ -1,6 +1,14 @@
 Changelog
 =========
 
+Version 1.2.0
+-------------
+
+ * Merged logistic group lasso and multinomial group lasso to one class.
+ * Added support for sparse matrices.
+ * Added utility for extracting groups from a sklearn OneHotEncoder.
+ * Added option to control group-wise scaling of regularisation.
+
 Version 1.2.2
 -------------
 
