@@ -1,28 +1,20 @@
+import warnings
 from abc import ABC, abstractmethod
 from math import sqrt
 from numbers import Number
-import warnings
 
-import numpy.linalg as la
 import numpy as np
+import numpy.linalg as la
 from scipy import sparse
-from sklearn.utils import (
-    check_random_state,
-    check_array,
-    check_consistent_length,
-)
-from sklearn.base import (
-    BaseEstimator,
-    TransformerMixin,
-    RegressorMixin,
-    ClassifierMixin,
-)
+from sklearn.base import (BaseEstimator, ClassifierMixin, RegressorMixin,
+                          TransformerMixin)
 from sklearn.preprocessing import LabelBinarizer
+from sklearn.utils import (check_array, check_consistent_length,
+                           check_random_state)
 
+from group_lasso._fista import fista
 from group_lasso._singular_values import find_largest_singular_value
 from group_lasso._subsampling import subsample
-from group_lasso._fista import fista
-
 
 _DEBUG = False
 
@@ -93,6 +85,61 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     The loss is optimised using the FISTA algorithm proposed in [2] with the
     generalised gradient-based restarting scheme proposed in [3].
 
+    Parameters
+    ----------
+    groups : Iterable
+        Iterable that specifies which group each column corresponds to.
+        For columns that should not be regularised, the corresponding
+        group index should either be None or negative. For example, the
+        list ``[1, 1, 1, 2, 2, -1]`` specifies that the first three
+        columns of the data matrix belong to the first group, the next
+        two columns belong to the second group and the last column should
+        not be regularised.
+    group_reg : float or iterable [default=0.05]
+        The regularisation coefficient(s) for the group sparsity penalty.
+        If ``group_reg`` is an iterable, then its length should be equal to
+        the number of groups.
+    l1_reg : float or iterable [default=0.05]
+        The regularisation coefficient for the coefficient sparsity
+        penalty.
+    n_iter : int [default=100]
+        The maximum number of iterations to perform
+    tol : float [default=1e-5]
+        The convergence tolerance. The optimisation algorithm
+        will stop once ||x_{n+1} - x_n|| < ``tol``.
+    scale_reg : str [in {"group_size", "none", "inverse_group_size"] or None 
+        How to scale the group-wise regularisation coefficients. In the
+        original group lasso paper scaled the regularisation by the square
+        root of the elements in each group so that each variable has the
+        same effect on the regularisation. This is not sensible for dummy
+        encoded variables, as these always have either unit or zero norm.
+        ``scale_reg`` should therefore be None if all variables are dummy
+        variables. Finally, if the group size shouldn't be considered when
+        choosing variables, then inverse_group_size should be used instead
+        as that divide by the square root of the group size, removing the
+        dependence of group size on the regularisation strength.
+    subsampling_scheme : None, float, int or str [default=None]
+        The subsampling rate used for the gradient and singular value
+        computations. If it is a float, then it specifies the fraction
+        of rows to use in the computations. If it is an int, it
+        specifies the number of rows to use in the computation and if
+        it is a string, then it must be 'sqrt' and the number of rows used
+        in the computations is the square root of the number of rows
+        in X.
+    frobenius_lipschitz : bool [default=False]
+        Use the Frobenius norm to estimate the lipschitz coefficient of the
+        MSE loss. This works well for systems whose power iterations
+        converge slowly. If False, then subsampled power iterations are
+        used. Using the Frobenius approximation for the Lipschitz
+        coefficient might fail, and end up with all-zero weights.
+    fit_intercept : bool [default=True]
+        Whether to fit an intercept or not.
+    random_state : np.random.RandomState [default=None]
+        The random state used for initialisation of parameters.
+    warm_start : bool [default=False]
+        If true, then subsequent calls to fit will not re-initialise the
+        model parameters. This can speed up the hyperparameter search
+
     References
     ----------
     [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
@@ -125,63 +172,6 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         old_regularisation=False,
         supress_warning=False,
     ):
-        """
-
-        Arguments
-        ---------
-        groups : Iterable
-            Iterable that specifies which group each column corresponds to.
-            For columns that should not be regularised, the corresponding
-            group index should either be None or negative. For example, the
-            list ``[1, 1, 1, 2, 2, -1]`` specifies that the first three
-            columns of the data matrix belong to the first group, the next
-            two columns belong to the second group and the last column should
-            not be regularised.
-        group_reg : float or iterable [default=0.05]
-            The regularisation coefficient(s) for the group sparsity penalty.
-            If ``group_reg`` is an iterable, then its length should be equal to
-            the number of groups.
-        l1_reg : float or iterable [default=0.05]
-            The regularisation coefficient for the coefficient sparsity
-            penalty.
-        n_iter : int [default=100]
-            The maximum number of iterations to perform
-        tol : float [default=1e-5]
-            The convergence tolerance. The optimisation algorithm
-            will stop once ||x_{n+1} - x_n|| < ``tol``.
-        scale_reg : str [in {"group_size", "none", "inverse_group_size"] or None 
-            How to scale the group-wise regularisation coefficients. In the
-            original group lasso paper scaled the regularisation by the square
-            root of the elements in each group so that each variable has the
-            same effect on the regularisation. This is not sensible for dummy
-            encoded variables, as these always have either unit or zero norm.
-            ``scale_reg`` should therefore be None if all variables are dummy
-            variables. Finally, if the group size shouldn't be considered when
-            choosing variables, then inverse_group_size should be used instead
-            as that divide by the square root of the group size, removing the
-            dependence of group size on the regularisation strength.
-        subsampling_scheme : None, float, int or str [default=None]
-            The subsampling rate used for the gradient and singular value
-            computations. If it is a float, then it specifies the fraction
-            of rows to use in the computations. If it is an int, it
-            specifies the number of rows to use in the computation and if
-            it is a string, then it must be 'sqrt' and the number of rows used
-            in the computations is the square root of the number of rows
-            in X.
-        frobenius_lipschitz : bool [default=False]
-            Use the Frobenius norm to estimate the lipschitz coefficient of the
-            MSE loss. This works well for systems whose power iterations
-            converge slowly. If False, then subsampled power iterations are
-            used. Using the Frobenius approximation for the Lipschitz
-            coefficient might fail, and end up with all-zero weights.
-        fit_intercept : bool [default=True]
-            Whether to fit an intercept or not.
-        random_state : np.random.RandomState [default=None]
-            The random state used for initialisation of parameters.
-        warm_start : bool [default=False]
-            If true, then subsequent calls to fit will not re-initialise the
-            model parameters. This can speed up the hyperparameter search
-        """
         self.groups = groups
         self.group_reg = group_reg
         self.scale_reg = scale_reg
@@ -243,8 +233,8 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def _loss(self, X, y, w):
         """The group-lasso regularised loss.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         X : np.ndarray
             Data matrix, ``X.shape == (num_datapoints, num_features)``
         y : np.ndarray
@@ -259,8 +249,8 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def loss(self, X, y):
         """The group-lasso regularised loss with the current coefficients
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         X : np.ndarray
             Data matrix, ``X.shape == (num_datapoints, num_features)``
         y : np.ndarray
@@ -482,6 +472,61 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
     the viable features and that the output is fed into another regression
     algorithm, such as RidgeRegression in scikit-learn.
 
+    Parameters
+    ----------
+    groups : Iterable
+        Iterable that specifies which group each column corresponds to.
+        For columns that should not be regularised, the corresponding
+        group index should either be None or negative. For example, the
+        list ``[1, 1, 1, 2, 2, -1]`` specifies that the first three
+        columns of the data matrix belong to the first group, the next
+        two columns belong to the second group and the last column should
+        not be regularised.
+    group_reg : float or iterable [default=0.05]
+        The regularisation coefficient(s) for the group sparsity penalty.
+        If ``group_reg`` is an iterable, then its length should be equal to
+        the number of groups.
+    l1_reg : float or iterable [default=0.05]
+        The regularisation coefficient for the coefficient sparsity
+        penalty.
+    n_iter : int [default=100]
+        The maximum number of iterations to perform
+    tol : float [default=1e-5]
+        The convergence tolerance. The optimisation algorithm
+        will stop once ||x_{n+1} - x_n|| < ``tol``.
+    scale_reg : str [in {"group_size", "none", "inverse_group_size"] or None 
+        How to scale the group-wise regularisation coefficients. In the
+        original group lasso paper scaled the regularisation by the square
+        root of the elements in each group so that each variable has the
+        same effect on the regularisation. This is not sensible for dummy
+        encoded variables, as these always have either unit or zero norm.
+        ``scale_reg`` should therefore be None if all variables are dummy
+        variables. Finally, if the group size shouldn't be considered when
+        choosing variables, then inverse_group_size should be used instead
+        as that divide by the square root of the group size, removing the
+        dependence of group size on the regularisation strength.
+    subsampling_scheme : None, float, int or str [default=None]
+        The subsampling rate used for the gradient and singular value
+        computations. If it is a float, then it specifies the fraction
+        of rows to use in the computations. If it is an int, it
+        specifies the number of rows to use in the computation and if
+        it is a string, then it must be 'sqrt' and the number of rows used
+        in the computations is the square root of the number of rows
+        in X.
+    frobenius_lipschitz : bool [default=False]
+        Use the Frobenius norm to estimate the lipschitz coefficient of the
+        MSE loss. This works well for systems whose power iterations
+        converge slowly. If False, then subsampled power iterations are
+        used. Using the Frobenius approximation for the Lipschitz
+        coefficient might fail, and end up with all-zero weights.
+    fit_intercept : bool [default=True]
+        Whether to fit an intercept or not.
+    random_state : np.random.RandomState [default=None]
+        The random state used for initialisation of parameters.
+    warm_start : bool [default=False]
+        If true, then subsequent calls to fit will not re-initialise the
+        model parameters. This can speed up the hyperparameter search
+
     References
     ----------
     [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
@@ -513,52 +558,6 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         old_regularisation=False,
         supress_warning=False,
     ):
-        """
-
-        Arguments
-        ---------
-        groups : Iterable
-            Iterable that specifies which group each column corresponds to.
-            For columns that should not be regularised, the corresponding
-            group index should either be None or negative. For example, the
-            list ``[1, 1, 1, 2, 2, -1]`` specifies that the first three
-            columns of the data matrix belong to the first group, the next
-            two columns belong to the second group and the last column should
-            not be regularised.
-        group_reg : float or iterable [default=0.05]
-            The regularisation coefficient(s) for the group sparsity penalty.
-            If ``group_reg`` is an iterable, then its length should be equal to
-            the number of groups.
-        l1_reg : float or iterable [default=0.05]
-            The regularisation coefficient for the coefficient sparsity
-            penalty.
-        n_iter : int [default=100]
-            The maximum number of iterations to perform
-        tol : float [default=1e-5]
-            The convergence tolerance. The optimisation algorithm
-            will stop once ||x_{n+1} - x_n|| < ``tol``.
-        subsampling_scheme : None, float, int or str [default=None]
-            The subsampling rate used for the gradient and singular value
-            computations. If it is a float, then it specifies the fraction
-            of rows to use in the computations. If it is an int, it
-            specifies the number of rows to use in the computation and if
-            it is a string, then it must be 'sqrt' and the number of rows used
-            in the computations is the square root of the number of rows
-            in X.
-        frobenius_lipschitz : bool [default=False]
-            Use the Frobenius norm to estimate the lipschitz coefficient of the
-            MSE loss. This works well for systems whose power iterations
-            converge slowly. If False, then subsampled power iterations are
-            used. Using the Frobenius approximation for the Lipschitz
-            coefficient might fail, and end up with all-zero weights.
-        fit_intercept : bool [default=True]
-            Whether to fit an intercept or not.
-        random_state : np.random.RandomState [default=None]
-            The random state used for initialisation of parameters.
-        warm_start : bool [default=False]
-            If true, then subsequent calls to fit will not re-initialise the
-            model parameters. This can speed up the hyperparameter search
-        """
         super().__init__(
             groups=groups,
             l1_reg=l1_reg,
@@ -578,8 +577,8 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
     def fit(self, X, y, lipschitz=None):
         """Fit a group lasso regularised linear regression model.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         X : np.ndarray
             Data matrix
         y : np.ndarray
@@ -752,6 +751,61 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
     the viable features and that the output is fed into another classification
     algorithm, such as LogisticRegression in scikit-learn.
 
+    Parameters
+    ----------
+    groups : Iterable
+        Iterable that specifies which group each column corresponds to.
+        For columns that should not be regularised, the corresponding
+        group index should either be None or negative. For example, the
+        list ``[1, 1, 1, 2, 2, -1]`` specifies that the first three
+        columns of the data matrix belong to the first group, the next
+        two columns belong to the second group and the last column should
+        not be regularised.
+    group_reg : float or iterable [default=0.05]
+        The regularisation coefficient(s) for the group sparsity penalty.
+        If ``group_reg`` is an iterable, then its length should be equal to
+        the number of groups.
+    l1_reg : float or iterable [default=0.05]
+        The regularisation coefficient for the coefficient sparsity
+        penalty.
+    n_iter : int [default=100]
+        The maximum number of iterations to perform
+    tol : float [default=1e-5]
+        The convergence tolerance. The optimisation algorithm
+        will stop once ||x_{n+1} - x_n|| < ``tol``.
+    scale_reg : str [in {"group_size", "none", "inverse_group_size"] or None 
+        How to scale the group-wise regularisation coefficients. In the
+        original group lasso paper scaled the regularisation by the square
+        root of the elements in each group so that each variable has the
+        same effect on the regularisation. This is not sensible for dummy
+        encoded variables, as these always have either unit or zero norm.
+        ``scale_reg`` should therefore be None if all variables are dummy
+        variables. Finally, if the group size shouldn't be considered when
+        choosing variables, then inverse_group_size should be used instead
+        as that divide by the square root of the group size, removing the
+        dependence of group size on the regularisation strength.
+    subsampling_scheme : None, float, int or str [default=None]
+        The subsampling rate used for the gradient and singular value
+        computations. If it is a float, then it specifies the fraction
+        of rows to use in the computations. If it is an int, it
+        specifies the number of rows to use in the computation and if
+        it is a string, then it must be 'sqrt' and the number of rows used
+        in the computations is the square root of the number of rows
+        in X.
+    frobenius_lipschitz : bool [default=False]
+        Use the Frobenius norm to estimate the lipschitz coefficient of the
+        MSE loss. This works well for systems whose power iterations
+        converge slowly. If False, then subsampled power iterations are
+        used. Using the Frobenius approximation for the Lipschitz
+        coefficient might fail, and end up with all-zero weights.
+    fit_intercept : bool [default=True]
+        Whether to fit an intercept or not.
+    random_state : np.random.RandomState [default=None]
+        The random state used for initialisation of parameters.
+    warm_start : bool [default=False]
+        If true, then subsequent calls to fit will not re-initialise the
+        model parameters. This can speed up the hyperparameter search
+
     References
     ----------
     [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
@@ -782,52 +836,6 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
         old_regularisation=False,
         supress_warning=False,
     ):
-        """
-
-        Arguments
-        ---------
-        groups : Iterable
-            Iterable that specifies which group each column corresponds to.
-            For columns that should not be regularised, the corresponding
-            group index should either be None or negative. For example, the
-            list ``[1, 1, 1, 2, 2, -1]`` specifies that the first three
-            columns of the data matrix belong to the first group, the next
-            two columns belong to the second group and the last column should
-            not be regularised.
-        group_reg : float or iterable [default=0.05]
-            The regularisation coefficient(s) for the group sparsity penalty.
-            If ``group_reg`` is an iterable, then its length should be equal to
-            the number of groups.
-        l1_reg : float or iterable [default=0.05]
-            The regularisation coefficient for the coefficient sparsity
-            penalty.
-        n_iter : int [default=100]
-            The maximum number of iterations to perform
-        tol : float [default=1e-5]
-            The convergence tolerance. The optimisation algorithm
-            will stop once ||x_{n+1} - x_n|| < ``tol``.
-        subsampling_scheme : None, float, int or str [default=None]
-            The subsampling rate used for the gradient and singular value
-            computations. If it is a float, then it specifies the fraction
-            of rows to use in the computations. If it is an int, it
-            specifies the number of rows to use in the computation and if
-            it is a string, then it must be 'sqrt' and the number of rows used
-            in the computations is the square root of the number of rows
-            in X.
-        frobenius_lipschitz : bool [default=False]
-            Use the Frobenius norm to estimate the lipschitz coefficient of the
-            MSE loss. This works well for systems whose power iterations
-            converge slowly. If False, then subsampled power iterations are
-            used. Using the Frobenius approximation for the Lipschitz
-            coefficient might fail, and end up with all-zero weights.
-        fit_intercept : bool [default=True]
-            Whether to fit an intercept or not.
-        random_state : np.random.RandomState [default=None]
-            The random state used for initialisation of parameters.
-        warm_start : bool [default=False]
-            If true, then subsequent calls to fit will not re-initialise the
-            model parameters. This can speed up the hyperparameter search
-        """
         if subsampling_scheme is not None:
             warnings.warn(
                 "Subsampling is not stable for multinomial group lasso."
