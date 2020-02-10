@@ -332,7 +332,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
                     )
                 )
 
-        weights = np.concatenate([self.intercept_, self.coef_])
+        weights = _join_intercept(self.intercept_, self.coef_)
         weights = fista(
             weights,
             grad=self._unregularised_gradient,
@@ -390,7 +390,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         self.group_reg_vector_ = self._get_reg_vector(self.group_reg)
         self.losses_ = []
 
-        if not self.warm_start or not hasattr(self, coef_):
+        if not self.warm_start or not hasattr(self, "coef_"):
             self.coef_ = self.random_state_.standard_normal(
                 (X.shape[1] - 1, y.shape[1])
             )
