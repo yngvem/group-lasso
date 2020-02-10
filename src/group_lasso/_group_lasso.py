@@ -620,97 +620,6 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         return SSE_lipschitz / num_rows
 
 
-def _sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-
-
-def _logit(X, w):
-    return X @ w
-
-
-def _logistic_proba(X, w):
-    return _sigmoid(_logit(X, w))
-
-
-def _logistic_cross_entropy(X, y, w):
-    p = _logistic_proba(X, w)
-    return -(y * np.log(p) + (1 - y) * np.log(1 - p))
-
-
-class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
-    """Sparse group lasso regularised single-class logistic regression.
-
-    This class implements the Sparse Group Lasso [1] regularisation for
-    logistic regression with a cross entropy penalty.
-
-    This class is implemented as both a regressor and a transformation.
-    If the ``transform`` method is called, then the columns of the input
-    that correspond to zero-valued regression coefficients are dropped.
-
-    The loss is optimised using the FISTA algorithm proposed in [2] with the
-    generalised gradient-based restarting scheme proposed in [3]. This
-    algorithm is not as accurate as a few other optimisation algorithms,
-    but it is extremely efficient and does recover the sparsity patterns.
-    We therefore reccomend that this class is used as a transformer to select
-    the viable features and that the output is fed into another classification
-    algorithm, such as LogisticRegression in scikit-learn.
-
-    References
-    ----------
-    [1] Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2013).
-    A sparse-group lasso. Journal of Computational and Graphical
-    Statistics, 22(2), 231-245.
-
-    [2] Beck A, Teboulle M. (2009). A fast iterative shrinkage-thresholding
-    algorithm for linear inverse problems. SIAM journal on imaging
-    sciences. 2009 Mar 4;2(1):183-202.
-
-    [3] O’Donoghue B, Candes E. (2015) Adaptive restart for accelerated
-    gradient schemes. Foundations of computational mathematics.
-    Jun 1;15(3):715-32.
-    """
-
-    def _compute_proba(self, X, w):
-        return _sigmoid(X @ w)
-
-    def _unregularised_loss(self, X, y, w):
-        X_, y_ = self.subsample(X, y)
-        return _logistic_cross_entropy(X_, y_, w).sum() / X.shape[0]
-
-    def _grad(self, X, y, w):
-        X_, y_ = self.subsample(X, y)
-        p = _logistic_proba(X_, w)
-        return X_.T @ (p - y_) / X_.shape[0]
-
-    def _compute_lipschitz(self, X, y):
-        if sparse.issparse(X):
-            norm = sparse.linalg.norm(X, "fro")
-        else:
-            norm = la.norm(X, "fro")
-        return np.sqrt(12) * norm / X.shape[0]
-
-    def predict_proba(self, X):
-        return _logistic_proba(X, self.coef_)
-
-    def predict(self, X):
-        """Predict using the linear model.
-        """
-        return self.predict_proba(X) >= 0.5
-
-    def fit(self, X, y, lipschitz=None):
-        if y.ndim == 2 and y.shape[1] > 1:
-            n = y.shape[1]
-            warnings.warn(
-                (
-                    "You have passed {n} targets to a single class classifier."
-                    " This will simply train {n} different models meaning that"
-                    " multiple classes can be predicted as true at once."
-                ).format(n=n)
-            )
-
-        super().fit(X, y, lipschitz=lipschitz)
-
-
 def _softmax(logit):
     logit = logit - logit.max(1, keepdims=True)
     expl = np.exp(logit)
@@ -718,7 +627,7 @@ def _softmax(logit):
 
 
 def _softmax_proba(X, W):
-    return _softmax(_logit(X, W))
+    return _softmax(X@W)
 
 
 def _softmax_cross_entropy(X, Y, W):
@@ -732,12 +641,11 @@ def _one_hot_encode(y):
     return y
 
 
-class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
+class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
     """Sparse group lasso regularised multi-class logistic regression.
 
     This class implements the Sparse Group Lasso [1] regularisation for
-    multinomial regression (also known as multi-class logistic regression)
-    with a cross entropy penalty.
+    multi-class logistic regression with a cross entropy penalty.
 
     This class is implemented as both a regressor and a transformation.
     If the ``transform`` method is called, then the columns of the input
@@ -838,7 +746,7 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
     ):
         if subsampling_scheme is not None:
             warnings.warn(
-                "Subsampling is not stable for multinomial group lasso."
+                "Subsampling is not stable for logistic regression group lasso."
             )
         super().__init__(
             groups=groups,
@@ -913,3 +821,4 @@ class MultinomialGroupLasso(BaseGroupLasso, ClassifierMixin):
             X = check_array(X, accept_sparse='csr')
 
         return X, y, lipschitz
+
