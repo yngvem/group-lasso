@@ -6,11 +6,18 @@ from numbers import Number
 import numpy as np
 import numpy.linalg as la
 from scipy import sparse
-from sklearn.base import (BaseEstimator, ClassifierMixin, RegressorMixin,
-                          TransformerMixin)
+from sklearn.base import (
+    BaseEstimator,
+    ClassifierMixin,
+    RegressorMixin,
+    TransformerMixin,
+)
 from sklearn.preprocessing import LabelBinarizer
-from sklearn.utils import (check_array, check_consistent_length,
-                           check_random_state)
+from sklearn.utils import (
+    check_array,
+    check_consistent_length,
+    check_random_state,
+)
 
 from group_lasso._fista import fista
 from group_lasso._singular_values import find_largest_singular_value
@@ -71,7 +78,7 @@ def _join_intercept(b, w):
 def _add_intercept_col(X):
     ones = np.ones([X.shape[0], 1])
     if sparse.issparse(X):
-        return sparse.hstack((ones, X))        
+        return sparse.hstack((ones, X))
     return np.hstack([ones, X])
 
 
@@ -207,19 +214,21 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         elif scale_reg == "none":
             scale = 1
         elif scale_reg == "inverse_group_size":
-            scale = 1/sqrt(group.sum())
+            scale = 1 / sqrt(group.sum())
         else:
             raise ValueError(
-                "``scale_reg`` must be equal to \"group_size\","
-                " \"inverse_group_size\" or \"none\""
+                '``scale_reg`` must be equal to "group_size",'
+                ' "inverse_group_size" or "none"'
             )
-        return reg*scale
+        return reg * scale
 
-    def _get_reg_vector(self, reg): 
+    def _get_reg_vector(self, reg):
         """Get the group-wise regularisation coefficients from ``reg``.
         """
         if isinstance(reg, Number):
-            reg = [self._get_reg_strength(group, reg) for group in self.groups_]
+            reg = [
+                self._get_reg_strength(group, reg) for group in self.groups_
+            ]
         else:
             reg = list(reg)
         return reg
@@ -360,7 +369,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """Ensure that the inputs are valid and prepare them for fit.
         """
         check_consistent_length(X, y)
-        X = check_array(X, accept_sparse='csr')
+        X = check_array(X, accept_sparse="csr")
         y = check_array(y)
         if len(y.shape) == 1:
             y = y.reshape(-1, 1)
@@ -368,14 +377,14 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         # Add the intercept column and compute Lipschitz bound the correct way
         if self.fit_intercept:
             X = _add_intercept_col(X)
-            X = check_array(X, accept_sparse='csr')
+            X = check_array(X, accept_sparse="csr")
 
         if lipschitz is None:
             lipschitz = self._compute_lipschitz(X, y)
 
         if not self.fit_intercept:
             X = _add_intercept_col(X)
-            X = check_array(X, accept_sparse='csr')
+            X = check_array(X, accept_sparse="csr")
 
         return X, y, lipschitz
 
@@ -422,7 +431,9 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def sparsity_mask(self):
         """A boolean mask indicating whether features are used in prediction.
         """
-        warnings.warn("This property is discontinued, use sparsity_mask_ instead of sparsity_mask.")
+        warnings.warn(
+            "This property is discontinued, use sparsity_mask_ instead of sparsity_mask."
+        )
         return self.sparsity_mask_
 
     @property
@@ -444,7 +455,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """Remove columns corresponding to zero-valued coefficients.
         """
         if sparse.issparse(X):
-            X = check_array(X, accept_sparse='csc')
+            X = check_array(X, accept_sparse="csc")
         return X[:, self.sparsity_mask_]
 
     def fit_transform(self, X, y, lipschitz=None):
@@ -621,7 +632,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         num_rows, num_cols = X.shape
         if self.frobenius_lipchitz:
             if sparse.issparse(X):
-                return sparse.linalg.norm(X, "fro")**2/num_rows
+                return sparse.linalg.norm(X, "fro") ** 2 / num_rows
             return la.norm(X, "fro") ** 2 / num_rows
 
         s_max = find_largest_singular_value(
@@ -640,7 +651,7 @@ def _softmax(logit):
 
 
 def _softmax_proba(X, W):
-    return _softmax(X@W)
+    return _softmax(X @ W)
 
 
 def _softmax_cross_entropy(X, Y, W):
@@ -816,7 +827,7 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         self.label_binarizer_.fit(y)
         y = self._encode(y)
         check_consistent_length(X, y)
-        X = check_array(X, accept_sparse='csr')
+        X = check_array(X, accept_sparse="csr")
         check_array(y, ensure_2d=False)
         if set(np.unique(y)) != {0, 1}:
             raise ValueError(
@@ -827,14 +838,13 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         # Add the intercept column and compute Lipschitz bound the correct way
         if self.fit_intercept:
             X = _add_intercept_col(X)
-            X = check_array(X, accept_sparse='csr')
+            X = check_array(X, accept_sparse="csr")
 
         if lipschitz is None:
             lipschitz = self._compute_lipschitz(X, y)
 
         if not self.fit_intercept:
             X = _add_intercept_col(X)
-            X = check_array(X, accept_sparse='csr')
+            X = check_array(X, accept_sparse="csr")
 
         return X, y, lipschitz
-
