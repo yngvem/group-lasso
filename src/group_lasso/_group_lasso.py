@@ -419,6 +419,13 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         return self.predict(X)
 
     @property
+    def sparsity_mask(self):
+        """A boolean mask indicating whether features are used in prediction.
+        """
+        warnings.warn("This property is discontinued, use sparsity_mask_ instead of sparsity_mask.")
+        return self.sparsity_mask_
+
+    @property
     def sparsity_mask_(self):
         """A boolean mask indicating whether features are used in prediction.
         """
