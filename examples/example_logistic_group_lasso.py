@@ -25,9 +25,7 @@ LogisticGroupLasso.LOG_LOSSES = True
 # ----------------------
 group_sizes = [np.random.randint(10, 20) for i in range(50)]
 active_groups = [np.random.randint(2) for _ in group_sizes]
-groups = np.concatenate(
-    [size * [i] for i, size in enumerate(group_sizes)]
-)
+groups = np.concatenate([size * [i] for i, size in enumerate(group_sizes)])
 num_coeffs = sum(group_sizes)
 num_datapoints = 10000
 noise_std = 1
@@ -115,9 +113,7 @@ coef = gl.coef_[:, 1] - gl.coef_[:, 0]
 plt.figure()
 plt.plot(w / np.linalg.norm(w), ".", label="True weights")
 plt.plot(
-    coef / np.linalg.norm(coef),
-    ".",
-    label="Estimated weights",
+    coef / np.linalg.norm(coef), ".", label="Estimated weights",
 )
 
 plt.figure()
