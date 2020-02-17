@@ -419,7 +419,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         return self.predict(X)
 
     @property
-    def sparsity_mask(self):
+    def sparsity_mask_(self):
         """A boolean mask indicating whether features are used in prediction.
         """
         coef_ = self.coef_.mean(1)
@@ -427,12 +427,18 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
         return np.abs(coef_) > 1e-10 * mean_abs_coef
 
+    @property
+    def chosen_groups_(self):
+        """A set of the coosen group ids.
+        """
+        return set(np.unique(self.groups_[self.sparsity_mask_]))
+
     def transform(self, X):
         """Remove columns corresponding to zero-valued coefficients.
         """
         if sparse.issparse(X):
             X = check_array(X, accept_sparse='csc')
-        return X[:, self.sparsity_mask]
+        return X[:, self.sparsity_mask_]
 
     def fit_transform(self, X, y, lipschitz=None):
         """Fit a group lasso model to X and y and remove unused columns from X
@@ -635,12 +641,6 @@ def _softmax_cross_entropy(X, Y, W):
     return -np.sum(Y * np.log(P))
 
 
-def _one_hot_encode(y):
-    if y.ndim == 1:
-        y = LabelBinarizer().fit_transform(y[:, np.newaxis])
-    return y
-
-
 class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
     """Sparse group lasso regularised multi-class logistic regression.
 
@@ -767,12 +767,10 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         return _softmax_proba(X, w)
 
     def _unregularised_loss(self, X, y, w):
-        y = _one_hot_encode(y)
         X_, y_ = self.subsample(X, y)
         return _softmax_cross_entropy(X_, y_, w).sum() / X.shape[0]
 
     def _grad(self, X, y, w):
-        y = _one_hot_encode(y)
         X_, y_ = self.subsample(X, y)
         p = _softmax_proba(X_, w)
 
@@ -788,17 +786,28 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         return 2 * C ** (1 / 4) * norm / X.shape[0]
 
     def predict_proba(self, X):
-        return _softmax_proba(X, self.coef_)
+        return _softmax_proba(X, self.coef_).T
 
     def predict(self, X):
         """Predict using the linear model.
         """
-        return np.argmax(self.predict_proba(X), axis=1)
+        return np.argmax(self.predict_proba(X), axis=0)[:, np.newaxis]
+
+    def _encode(self, y):
+        """One-hot encoding for the labels.
+        """
+        y = self.label_binarizer_.transform(y)
+        if y.shape[1] == 1:
+            ones = np.ones((y.shape[0], 1))
+            y = np.hstack(((ones - y.sum(1, keepdims=True)), y,))
+        return y
 
     def _prepare_dataset(self, X, y, lipschitz):
         """Ensure that the inputs are valid and prepare them for fit.
         """
-        y = _one_hot_encode(y)
+        self.label_binarizer_ = LabelBinarizer()
+        self.label_binarizer_.fit(y)
+        y = self._encode(y)
         check_consistent_length(X, y)
         X = check_array(X, accept_sparse='csr')
         check_array(y, ensure_2d=False)
