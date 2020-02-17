@@ -7,7 +7,6 @@ Warm start to choose regularisation strength
 # Setup
 # -----
 
-from matplotlib.colors import LogNorm
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.linear_model import Ridge
@@ -76,13 +75,13 @@ gl = GroupLasso(
     supress_warning=True,
     n_iter=1000,
     tol=1e-3,
-    warm_start=True,  # Warm start to 
+    warm_start=True,  # Warm start to start each subsequent fit with previous weights
 )
 
 for i, group_reg in enumerate(regularisations[::-1]):
     gl.group_reg = group_reg
     gl.fit(X, y)
-    weights[-(i+1)] = gl.sparsity_mask_.squeeze()
+    weights[-(i + 1)] = gl.sparsity_mask_.squeeze()
 
 
 ###############################################################################
