@@ -97,7 +97,7 @@ gl.fit(X, y)
 
 # Extract info from estimator
 yhat = gl.predict(X)
-sparsity_mask = gl.sparsity_mask
+sparsity_mask = gl.sparsity_mask_
 w_hat = gl.coef_
 
 # Compute performance metrics

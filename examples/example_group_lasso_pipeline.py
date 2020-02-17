@@ -102,7 +102,7 @@ pipe.fit(X, y)
 
 # Extract from pipeline
 yhat = pipe.predict(X)
-sparsity_mask = pipe["variable_selection"].sparsity_mask
+sparsity_mask = pipe["variable_selection"].sparsity_mask_
 coef = pipe["regressor"].coef_.T
 
 # Construct full coefficient vector

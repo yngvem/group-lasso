@@ -27,7 +27,7 @@ group_sizes = [np.random.randint(10, 20) for i in range(50)]
 active_groups = [np.random.randint(2) for _ in group_sizes]
 groups = np.concatenate(
     [size * [i] for i, size in enumerate(group_sizes)]
-).reshape(-1, 1)
+)
 num_coeffs = sum(group_sizes)
 num_datapoints = 10000
 noise_std = 1
@@ -96,7 +96,7 @@ gl.fit(X, c)
 
 # Extract info from estimator
 pred_c = gl.predict(X)
-sparsity_mask = gl.sparsity_mask
+sparsity_mask = gl.sparsity_mask_
 w_hat = gl.coef_
 
 # Compute performance metrics
@@ -111,18 +111,18 @@ print(f"Accuracy: {accuracy}, best possible accuracy = {best_accuracy}")
 ###############################################################################
 # Visualise regression coefficients
 # ---------------------------------
-for i in range(w.shape[1]):
-    plt.figure()
-    plt.plot(w[:, i] / np.linalg.norm(w[:, i]), ".", label="True weights")
-    plt.plot(
-        gl.coef_[:, i] / np.linalg.norm(gl.coef_[:, i]),
-        ".",
-        label="Estimated weights",
-    )
+coef = gl.coef_[:, 1] - gl.coef_[:, 0]
+plt.figure()
+plt.plot(w / np.linalg.norm(w), ".", label="True weights")
+plt.plot(
+    coef / np.linalg.norm(coef),
+    ".",
+    label="Estimated weights",
+)
 
 plt.figure()
-plt.plot([w.min(), w.max()], [gl.coef_.min(), gl.coef_.max()], "gray")
-plt.scatter(w, gl.coef_, s=10)
+plt.plot([w.min(), w.max()], [coef.min(), coef.max()], "gray")
+plt.scatter(w, coef, s=10)
 plt.ylabel("Learned coefficients")
 plt.xlabel("True coefficients")
 
