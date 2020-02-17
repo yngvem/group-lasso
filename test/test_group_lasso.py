@@ -84,13 +84,17 @@ class BaseTestGroupLasso:
         y = np.random.randint(0, 2, (100, 2))
         gl.scale_reg = "group_size"
         gl._init_fit(X, y, 1)
-        assert gl.group_reg_vector_ == pytest.approx([np.sqrt(3), np.sqrt(2), 1])
+        assert gl.group_reg_vector_ == pytest.approx(
+            [np.sqrt(3), np.sqrt(2), 1]
+        )
         gl.scale_reg = None
         gl._init_fit(X, y, 1)
-        assert gl.group_reg_vector_ == pytest.approx([1]*3)
+        assert gl.group_reg_vector_ == pytest.approx([1] * 3)
         gl.scale_reg = "inverse_group_size"
         gl._init_fit(X, y, 1)
-        assert gl.group_reg_vector_ == pytest.approx([1/np.sqrt(3), 1/np.sqrt(2), 1])
+        assert gl.group_reg_vector_ == pytest.approx(
+            [1 / np.sqrt(3), 1 / np.sqrt(2), 1]
+        )
 
     def test_reg_is_correct(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
@@ -187,15 +191,13 @@ class BaseTestGroupLasso:
             yhat2 = sklearn_no_reg.predict(X).reshape(yhat1.shape)
 
             th = 0.01
-            pred_diff = (yhat1.astype(float) - yhat2.astype(float))
-            if np.linalg.norm(pred_diff, 1)/y.shape[0] > th:
+            pred_diff = yhat1.astype(float) - yhat2.astype(float)
+            if np.linalg.norm(pred_diff, 1) / y.shape[0] > th:
                 diff_gl = np.linalg.norm(yhat1.astype(float) - y.astype(float))
                 diff_sk = np.linalg.norm(yhat2.astype(float) - y.astype(float))
                 assert diff_gl < diff_sk
 
-    def test_warm_start_is_possible(
-        self, gl_no_reg, ml_problem
-    ):
+    def test_warm_start_is_possible(self, gl_no_reg, ml_problem):
         X, y, w
         gl = gl_no_reg
         gl.warm_start = True
@@ -220,12 +222,12 @@ class BaseTestGroupLasso:
             yhat1 = gl.fit_predict(X, y)
             sklearn_no_reg.fit(X, y)
             yhat2 = sklearn_no_reg.predict(X).reshape(yhat1.shape)
-            
+
             th = 0.01
-            pred_diff = (yhat1.astype(float) - yhat2.astype(float))
-            if np.linalg.norm(pred_diff, 1)/y.shape[0] > th:
-                diff_gl = np.linalg.norm(yhat1.astype(float) - y.astype(float)) 
-                diff_sk = np.linalg.norm(yhat2.astype(float) - y.astype(float)) 
+            pred_diff = yhat1.astype(float) - yhat2.astype(float)
+            if np.linalg.norm(pred_diff, 1) / y.shape[0] > th:
+                diff_gl = np.linalg.norm(yhat1.astype(float) - y.astype(float))
+                diff_sk = np.linalg.norm(yhat2.astype(float) - y.astype(float))
                 assert diff_gl < diff_sk
 
     def test_high_group_sparsity_yields_zero_coefficients(self, ml_problem):
