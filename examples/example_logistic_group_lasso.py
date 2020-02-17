@@ -11,8 +11,6 @@ A sample script for group lasso regression
 
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.linear_model import Ridge
-from sklearn.pipeline import Pipeline
 
 from group_lasso import LogisticGroupLasso
 

@@ -9,9 +9,6 @@ Warm start to choose regularisation strength
 
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.linear_model import Ridge
-from sklearn.metrics import r2_score
-from sklearn.pipeline import Pipeline
 
 from group_lasso import GroupLasso
 

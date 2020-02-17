@@ -11,7 +11,6 @@ A sample script for group lasso with dummy variables
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import sparse
 from sklearn.linear_model import Ridge
 from sklearn.metrics import r2_score
 from sklearn.pipeline import Pipeline
