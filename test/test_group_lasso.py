@@ -92,7 +92,6 @@ class BaseTestGroupLasso:
         gl._init_fit(X, y, 1)
         assert gl.group_reg_vector_ == pytest.approx([1/np.sqrt(3), 1/np.sqrt(2), 1])
 
-
     def test_reg_is_correct(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
         gl = gl_no_reg
@@ -193,6 +192,23 @@ class BaseTestGroupLasso:
                 diff_gl = np.linalg.norm(yhat1.astype(float) - y.astype(float))
                 diff_sk = np.linalg.norm(yhat2.astype(float) - y.astype(float))
                 assert diff_gl < diff_sk
+
+    def test_warm_start_is_possible(
+        self, gl_no_reg, ml_problem
+    ):
+        X, y, w
+        gl = gl_no_reg
+        gl.warm_start = True
+        gl.group_reg = 100
+        gl.fit(X, y)
+        coef = gl.coef_.copy()
+        gl.group_reg = 0
+        gl.fit(X, y)
+        coef2 = gl.coef_.copy()
+        assert not np.allclose(coef, coef2)
+
+    def test_chosen_groups_is_correct(self):
+        assert False
 
     def test_unregularised_sparse_fit_equal_sklearn(
         self, gl_no_reg, sklearn_no_reg, sparse_ml_problem
