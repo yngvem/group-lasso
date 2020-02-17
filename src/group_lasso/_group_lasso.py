@@ -27,10 +27,10 @@ _DEBUG = False
 
 _OLD_REG_WARNING = """
 The behaviour has changed since v1.1.1, before then, a bug in the optimisation
-algorithm made it so the regularisation parameter was scaled by the largest 
+algorithm made it so the regularisation parameter was scaled by the largest
 eigenvalue of the covariance matrix.
 
-To use the old behaviour, initialise the class with the keyword argument 
+To use the old behaviour, initialise the class with the keyword argument
 `old_regularisation=True`.
 
 To supress this warning, initialise the class with the keyword argument
@@ -114,7 +114,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     tol : float [default=1e-5]
         The convergence tolerance. The optimisation algorithm
         will stop once ||x_{n+1} - x_n|| < ``tol``.
-    scale_reg : str [in {"group_size", "none", "inverse_group_size"] or None 
+    scale_reg : str [in {"group_size", "none", "inverse_group_size"] or None
         How to scale the group-wise regularisation coefficients. In the
         original group lasso paper scaled the regularisation by the square
         root of the elements in each group so that each variable has the
@@ -234,7 +234,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         return reg
 
     @abstractmethod
-    def _unregularised_loss(self, X, y, w):  #  pragma: nocover
+    def _unregularised_loss(self, X, y, w):  # pragma: nocover
         """The unregularised reconstruction loss.
         """
         raise NotImplementedError
@@ -518,7 +518,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
     tol : float [default=1e-5]
         The convergence tolerance. The optimisation algorithm
         will stop once ||x_{n+1} - x_n|| < ``tol``.
-    scale_reg : str [in {"group_size", "none", "inverse_group_size"] or None 
+    scale_reg : str [in {"group_size", "none", "inverse_group_size"] or None
         How to scale the group-wise regularisation coefficients. In the
         original group lasso paper scaled the regularisation by the square
         root of the elements in each group so that each variable has the
@@ -699,7 +699,7 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
     tol : float [default=1e-5]
         The convergence tolerance. The optimisation algorithm
         will stop once ||x_{n+1} - x_n|| < ``tol``.
-    scale_reg : str [in {"group_size", "none", "inverse_group_size"] or None 
+    scale_reg : str [in {"group_size", "none", "inverse_group_size"] or None
         How to scale the group-wise regularisation coefficients. In the
         original group lasso paper scaled the regularisation by the square
         root of the elements in each group so that each variable has the
