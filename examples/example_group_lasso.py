@@ -87,7 +87,6 @@ gl = GroupLasso(
     n_iter=1000,
     tol=1e-3,
 )
-
 gl.fit(X, y)
 
 
@@ -112,19 +111,21 @@ print(f"R^2: {R2}, best possible R^2 = {R2_best}")
 ###############################################################################
 # Visualise regression coefficients
 # ---------------------------------
-for i in range(w.shape[1]):
-    plt.figure()
-    plt.plot(w[:, i], ".", label="True weights")
-    plt.plot(gl.coef_[:, i], ".", label="Estimated weights")
+plt.figure()
+plt.plot(w, ".", label="True weights")
+plt.plot(w_hat, ".", label="Estimated weights")
 
 plt.figure()
-plt.plot([w.min(), w.max()], [gl.coef_.min(), gl.coef_.max()], "gray")
-plt.scatter(w, gl.coef_, s=10)
+plt.plot([w.min(), w.max()], [w_hat.min(), w_hat.max()], "gray")
+plt.scatter(w, w_hat, s=10)
 plt.ylabel("Learned coefficients")
 plt.xlabel("True coefficients")
 
 plt.figure()
 plt.plot(gl.losses_)
+plt.title("Loss plot")
+plt.ylabel("Mean squared error")
+plt.xlabel("Iteration")
 
 print("X shape: {X.shape}".format(X=X))
 print("True intercept: {intercept}".format(intercept=intercept))
