@@ -6,6 +6,7 @@ import numpy.linalg as la
 import pytest
 from scipy import sparse
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.preprocessing import LabelBinarizer
 
 from group_lasso import _group_lasso
 
@@ -198,7 +199,7 @@ class BaseTestGroupLasso:
                 assert diff_gl < diff_sk
 
     def test_warm_start_is_possible(self, gl_no_reg, ml_problem):
-        X, y, w
+        X, y, w = ml_problem
         gl = gl_no_reg
         gl.warm_start = True
         gl.group_reg = 100
@@ -208,9 +209,6 @@ class BaseTestGroupLasso:
         gl.fit(X, y)
         coef2 = gl.coef_.copy()
         assert not np.allclose(coef, coef2)
-
-    def test_chosen_groups_is_correct(self):
-        assert False
 
     def test_unregularised_sparse_fit_equal_sklearn(
         self, gl_no_reg, sklearn_no_reg, sparse_ml_problem
@@ -329,6 +327,7 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
         X = np.random.standard_normal((self.num_rows, self.num_cols))
         w = self.random_weights()
         y = np.argmax(_group_lasso._softmax(X @ w), axis=1)
+        y = LabelBinarizer().fit_transform(y)
         return X, y, w
 
     @pytest.fixture
@@ -340,6 +339,7 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
             X[row, col] = np.random.standard_normal()
         w = self.random_weights()
         y = np.argmax(_group_lasso._softmax(X @ w), axis=1)
+        y = LabelBinarizer().fit_transform(y)
         return X, y, w
 
     def test_unregularised_fit_equal_sklearn(
@@ -349,7 +349,28 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
         sklearn_no_reg.set_params(multi_class="multinomial", solver="lbfgs")
         for gl in self.all_configs(gl_no_reg):
             yhat1 = gl.fit_predict(X, y)
-            sklearn_no_reg.fit(X, y[:, np.newaxis])
-            yhat2 = sklearn_no_reg.predict(X)
+            sklearn_no_reg.fit(X, np.argmax(y, axis=1)[:, np.newaxis])
+            yhat2 = sklearn_no_reg.predict(X)[:, np.newaxis]
 
             assert np.mean(yhat1 != yhat2) < 5e-2
+
+    def test_unregularised_sparse_fit_equal_sklearn(
+        self, gl_no_reg, sklearn_no_reg, sparse_ml_problem
+    ):
+        X, y, w = sparse_ml_problem
+        sklearn_no_reg.n_iter = 1000
+        sklearn_no_reg.tol = 1e-10
+        for gl in self.all_configs(gl_no_reg):
+            yhat1 = gl.fit_predict(X, y)
+            sklearn_no_reg.fit(X, np.argmax(y, axis=1))
+            yhat2 = sklearn_no_reg.predict(X).reshape(yhat1.shape)
+
+            yhat1 = gl._encode(yhat1)
+            yhat2 = gl._encode(yhat2)
+            th = 0.01
+            pred_diff = yhat1.astype(float) - yhat2.astype(float)
+            if np.linalg.norm(pred_diff, 1) / y.shape[0] > th:
+                diff_gl = np.linalg.norm(yhat1.astype(float) - y.astype(float))
+                diff_sk = np.linalg.norm(yhat2.astype(float) - y.astype(float))
+                assert diff_gl < diff_sk
+
