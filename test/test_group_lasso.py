@@ -97,6 +97,16 @@ class BaseTestGroupLasso:
             [1 / np.sqrt(3), 1 / np.sqrt(2), 1]
         )
 
+    def test_intercept_used_correctly_for_loss(self, ml_problem):
+        X, y, w = ml_problem
+        groups = np.random.randint(1, 5, size=X.shape[1])
+        gl = self.MLFitter(group_reg=1, groups=groups, fit_intercept=True)
+
+        gl.fit(X, y)
+        w_hat = _group_lasso._join_intercept(gl.intercept_, gl.coef_)
+        X_intercept = _group_lasso._add_intercept_col(X)
+        assert gl.loss(X, y) == gl._loss(X_intercept, y, w_hat)
+
     def test_reg_is_correct(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
         gl = gl_no_reg

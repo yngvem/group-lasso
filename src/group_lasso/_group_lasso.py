@@ -266,7 +266,9 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             Target vector/matrix, ``y.shape == (num_datapoints, num_targets)``,
             or ``y.shape == (num_datapoints,)``
         """
-        return self._loss(X, y, self.coef_)
+        X = _add_intercept_col(X)
+        w = _join_intercept(self.intercept_, self.coef_)
+        return self._loss(X, y, w)
 
     @abstractmethod
     def _compute_lipschitz(self, X, y):  # pragma: nocover
