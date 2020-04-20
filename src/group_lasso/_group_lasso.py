@@ -442,7 +442,10 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def sparsity_mask_(self):
         """A boolean mask indicating whether features are used in prediction.
         """
-        coef_ = self.coef_.mean(1)
+        if len(self.groups.shape) == 1 or self.groups.shape[1] == 1:
+            coef_ = self.coef_.mean(1)
+        else:
+            coef_ = self.coef_
         mean_abs_coef = abs(coef_.mean())
 
         return np.abs(coef_) > 1e-10 * mean_abs_coef
@@ -451,7 +454,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def chosen_groups_(self):
         """A set of the coosen group ids.
         """
-        return set(np.unique(self.groups_[self.sparsity_mask_]))
+        return set(np.unique(self.groups[self.sparsity_mask_]))
 
     def transform(self, X):
         """Remove columns corresponding to zero-valued coefficients.
