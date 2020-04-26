@@ -860,7 +860,7 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
     def predict_proba(self, X):
         check_is_fitted(self, ['X_', 'y_'])
         X = check_array(X)
-        return _softmax_proba(X, self.coef_).T
+        return _softmax_proba(X, self.coef_)
 
     def predict(self, X):
         """Predict using the linear model.
@@ -873,7 +873,7 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         # should have meaningful values as well...
         if len(self.classes_) == 1:
             return self.classes_[0]*np.ones(len(X))
-        y_pred = np.argmax(self.predict_proba(X), axis=0)
+        y_pred = np.argmax(self.predict_proba(X), axis=1)
         return self._decode(y_pred)
 
     def _encode(self, y):
