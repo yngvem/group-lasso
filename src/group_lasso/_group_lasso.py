@@ -404,7 +404,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             # TODO: possibly drop a warning that group-lasso is not
             # functional if no groups are specified.
             groups = np.arange(X.shape[1])
-        self.groups_init_ = groups.ravel() # Validated user setting
+        self.groups_init_ = np.asarray(groups).ravel() # Validated user setting
         groups = np.array([-1 if i is None else i for i in groups])
 
         self.random_state_ = check_random_state(self.random_state)
