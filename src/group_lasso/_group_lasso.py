@@ -372,10 +372,13 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
     def _prepare_dataset(self, X, y, lipschitz):
         """Ensure that the inputs are valid and prepare them for fit.
+
+        CHECK: isn't this specific to GroupLasso - LogisticGroupLasso has
+               it's own _prepare_dataset...?
         """
         check_consistent_length(X, y)
         X = check_array(X, accept_sparse="csr")
-        y = check_array(y)
+        y = check_array(y, ensure_2d=False)
         if len(y.shape) == 1:
             y = y.reshape(-1, 1)
 
