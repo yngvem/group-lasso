@@ -6,11 +6,20 @@ import numpy.linalg as la
 import pytest
 from scipy import sparse
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.utils.estimator_checks import parametrize_with_checks
 from sklearn.preprocessing import LabelBinarizer
 
 from group_lasso import _group_lasso
 
 np.random.seed(0)
+
+
+# sklearn compatibility checks for the estimators.
+@parametrize_with_checks([_group_lasso.GroupLasso,
+                          _group_lasso.LogisticGroupLasso,
+                         ])
+def test_sklearn_compatible_estimator(estimator, check):
+    check(estimator)
 
 
 @pytest.mark.parametrize("reg", np.logspace(-3, 1, 10))
