@@ -859,6 +859,12 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         """
         check_is_fitted(self, ['X_', 'y_'])
         X = check_array(X)
+        # CHECK: not exactly sure how to handle the one-label case, where
+        # fit(X,y) received a y with just one label. This solves a check
+        # for the sklearn interface, but the other states (self.coef_, ...)
+        # should have meaningful values as well...
+        if len(self.classes_) == 1:
+            return self.classes_[0]*np.ones(len(X))
         return np.argmax(self.predict_proba(X), axis=0)
 
     def _encode(self, y):
