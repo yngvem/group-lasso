@@ -2,6 +2,7 @@ import warnings
 from math import sqrt
 
 import numpy.linalg as la
+from sklearn.exceptions import ConvergenceWarning
 
 
 def _fista_momentum(momentum):
@@ -52,7 +53,7 @@ def fista(x0, grad, prox, loss, lipschitz, n_iter=10, tol=1e-6, callback=None):
         "You used subsampling then this is expected, otherwise,"
         "try to increase the number of iterations "
         "or decreasing the tolerance.",
-        RuntimeWarning,
+        ConvergenceWarning,
     )
 
     return optimal_x
