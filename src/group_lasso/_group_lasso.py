@@ -859,7 +859,7 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         """
         check_is_fitted(self, ['X_', 'y_'])
         X = check_array(X)
-        return np.argmax(self.predict_proba(X), axis=0)[:, np.newaxis]
+        return np.argmax(self.predict_proba(X), axis=0)
 
     def _encode(self, y):
         """One-hot encoding for the labels.
