@@ -865,7 +865,8 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         # should have meaningful values as well...
         if len(self.classes_) == 1:
             return self.classes_[0]*np.ones(len(X))
-        return np.argmax(self.predict_proba(X), axis=0)
+        y_pred = np.argmax(self.predict_proba(X), axis=0)
+        return self._decode(y_pred)
 
     def _encode(self, y):
         """One-hot encoding for the labels.
@@ -875,6 +876,10 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
             ones = np.ones((y.shape[0], 1))
             y = np.hstack(((ones - y.sum(1, keepdims=True)), y,))
         return y
+
+    def _decode(self, y):
+        # CHECK: Is this robust???
+        return self.label_binarizer_.classes_[y]
 
     def _prepare_dataset(self, X, y, lipschitz):
         """Ensure that the inputs are valid and prepare them for fit.
