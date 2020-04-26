@@ -808,6 +808,14 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
             supress_warning=supress_warning,
         )
 
+    def _more_tags(self):
+        """
+        This is used only for testing. At the moment, LogisticGroupLasso()
+        supports binary classification only. See here what tags are possible:
+        https://scikit-learn.org/stable/developers/develop.html
+        """
+        return {"binary_only": True}
+
     def _compute_proba(self, X, w):
         return _softmax_proba(X, w)
 
