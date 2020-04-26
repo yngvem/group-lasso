@@ -846,8 +846,7 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         # Checks for input arrays in super().fit().
         ret = super().fit(X, y, lipschitz=lipschitz)
         self.classes_ = unique_labels(y)
-        self.X_ = X
-        self.y_ = y
+        check_is_fitted(self, ['X_', 'y_'])
         return ret
 
     def predict_proba(self, X):
