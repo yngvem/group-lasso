@@ -624,7 +624,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
             old_regularisation=old_regularisation,
             supress_warning=supress_warning,
         )
-        self.frobenius_lipchitz = frobenius_lipschitz
+        self.frobenius_lipschitz = frobenius_lipschitz
 
     def fit(self, X, y, lipschitz=None):
         """Fit a group lasso regularised linear regression model.
@@ -660,7 +660,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
 
     def _compute_lipschitz(self, X, y):
         num_rows, num_cols = X.shape
-        if self.frobenius_lipchitz:
+        if self.frobenius_lipschitz:
             if sparse.issparse(X):
                 return sparse.linalg.norm(X, "fro") ** 2 / num_rows
             return la.norm(X, "fro") ** 2 / num_rows
