@@ -646,7 +646,8 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         """
         X = check_array(X, accept_sparse=True)
         check_is_fitted(self, "is_fitted_")
-        return self.intercept_ + X @ self.coef_
+        y_pred = self.intercept_ + X @ self.coef_
+        return y_pred.squeeze()
 
     def _unregularised_loss(self, X, y, w):
         X_, y_ = self.subsample(X, y)
