@@ -18,6 +18,11 @@ from sklearn.utils import (
     check_consistent_length,
     check_random_state,
 )
+from sklearn.utils.validation import (
+    check_X_y,
+    check_is_fitted,
+)
+from sklearn.utils.multiclass import unique_labels
 
 from group_lasso._fista import fista
 from group_lasso._singular_values import find_largest_singular_value
@@ -420,8 +425,11 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def fit(self, X, y, lipschitz=None):
         """Fit a group-lasso regularised linear model.
         """
+        X, y = check_X_y(X, y, accept_sparse=True)
         self._init_fit(X, y, lipschitz=lipschitz)
         self._minimise_loss()
+        self.is_fitted_ = True
+        self.n_features_ = X.shape[1]
         return self
 
     @abstractmethod
@@ -466,6 +474,11 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def transform(self, X):
         """Remove columns corresponding to zero-valued coefficients.
         """
+        check_is_fitted(self, "n_features_")
+        X = check_array(X, accept_sparse=True)
+        if X.shape[1] != self.n_features_:
+            raise ValueError("Shape of input is different from what was seen"
+                             "in `fit`")
         if sparse.issparse(X):
             X = check_array(X, accept_sparse="csc")
         return X[:, self.sparsity_mask_]
@@ -628,6 +641,8 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
     def predict(self, X):
         """Predict using the linear model.
         """
+        X = check_array(X, accept_sparse=True)
+        check_is_fitted(self, "is_fitted_")
         return self.intercept_ + X @ self.coef_
 
     def _unregularised_loss(self, X, y, w):
@@ -815,12 +830,36 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         C = y.shape[-1]
         return 2 * C ** (1 / 4) * norm / X.shape[0]
 
+    def fit(self, X, y, lipschitz=None):
+        """Fit a group lasso regularised logistic regression model.
+
+        Parameters
+        ----------
+        X : np.ndarray
+            Data matrix
+        y : np.ndarray
+            Target vector or matrix
+        lipschitz : float or None [default=None]
+            A Lipschitz bound for the mean squared loss with the given
+            data and target matrices. If None, this is estimated.
+        """
+        # Checks for input arrays in super().fit().
+        ret = super().fit(X, y, lipschitz=lipschitz)
+        self.classes_ = unique_labels(y)
+        self.X_ = X
+        self.y_ = y
+        return ret
+
     def predict_proba(self, X):
+        check_is_fitted(self, ['X_', 'y_'])
+        X = check_array(X)
         return _softmax_proba(X, self.coef_).T
 
     def predict(self, X):
         """Predict using the linear model.
         """
+        check_is_fitted(self, ['X_', 'y_'])
+        X = check_array(X)
         return np.argmax(self.predict_proba(X), axis=0)[:, np.newaxis]
 
     def _encode(self, y):
