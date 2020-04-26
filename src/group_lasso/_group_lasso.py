@@ -422,6 +422,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """
         self._init_fit(X, y, lipschitz=lipschitz)
         self._minimise_loss()
+        return self
 
     @abstractmethod
     def predict(self, X):  # pragma: nocover
@@ -622,7 +623,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
             A Lipshitz bound for the mean squared loss with the given
             data and target matrices. If None, this is estimated.
         """
-        super().fit(X, y, lipschitz=lipschitz)
+        return super().fit(X, y, lipschitz=lipschitz)
 
     def predict(self, X):
         """Predict using the linear model.
