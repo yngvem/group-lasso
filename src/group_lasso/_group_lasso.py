@@ -166,7 +166,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        groups,
+        groups=None,
         group_reg=0.05,
         l1_reg=0.00,
         n_iter=100,
@@ -393,6 +393,10 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def _init_fit(self, X, y, lipschitz):
         """Initialise model and check inputs.
         """
+        if self.groups is None:
+            # TODO: possibly drop a warning that group-lasso is not
+            # functional if no groups are specified.
+            self.groups = np.arange(X.shape[1])
         self.random_state_ = check_random_state(self.random_state)
         X, y, lipschitz = self._prepare_dataset(X, y, lipschitz)
         groups = np.array([-1 if i is None else i for i in self.groups])
@@ -756,7 +760,7 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
 
     def __init__(
         self,
-        groups,
+        groups=None,
         group_reg=0.05,
         l1_reg=0.05,
         n_iter=100,
