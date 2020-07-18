@@ -5,7 +5,7 @@ Quick overview
 --------------
 
 Let us recap the definition of a sparse group lasso regularised machine 
-learning algorithm. Consdier the unregularised loss function
+learning algorithm. Consider the unregularised loss function
 :math:`L(\mathbf{\beta}; \mathbf{X}, \mathbf{y})`, where
 :math:`\mathbf{\beta}` is the model coefficients, :math:`\mathbf{X}` is the
 data matrix and :math:`\mathbf{y}` is the target vector (or matrix in the
