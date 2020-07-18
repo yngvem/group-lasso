@@ -74,7 +74,7 @@ class FISTAProblem:
             generalised_gradient = momentum_x.ravel() - new_optimal_x.ravel()
             update_vector = new_optimal_x.ravel() - previous_x.ravel()
             # Loss based restart criterion
-            if self.smooth_loss(new_optimal_x) > self.smooth_loss(previous_x):
+            if generalised_gradient.T@update_vector > 0:
                 momentum_x = previous_x
                 momentum = 1
                 (

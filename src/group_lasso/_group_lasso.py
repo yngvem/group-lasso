@@ -65,8 +65,8 @@ def _split_intercept(w):
 
 
 def _join_intercept(b, w):
-    m, n = w.shape
-    return np.concatenate([np.array(b).reshape(1, n), w], axis=0)
+    num_classes = w.shape[1]
+    return np.concatenate([np.array(b).reshape(1, num_classes), w], axis=0)
 
 
 def _add_intercept_col(X):
@@ -193,10 +193,10 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         is sliced away.
         """
         regulariser = 0
-        b, w = _split_intercept(w)
+        coef_ = _split_intercept(w)[1]
         for group, reg in zip(self.groups_, self.group_reg_vector_):
-            regulariser += reg * la.norm(w[group])
-        regulariser += self.l1_reg * la.norm(w.ravel(), 1)
+            regulariser += reg * la.norm(coef_[group])
+        regulariser += self.l1_reg * la.norm(coef_.ravel(), 1)
         return regulariser
 
     def _get_reg_strength(self, group, reg):
@@ -654,7 +654,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
         return SSE_grad / X_aug.shape[0]
 
     def _estimate_lipschitz(self, X_aug, y):
-        num_rows, num_cols = X_aug.shape
+        num_rows = X_aug.shape[0]
         if self.frobenius_lipchitz:
             if sparse.issparse(X_aug):
                 return sparse.linalg.norm(X_aug, "fro") ** 2 / num_rows
