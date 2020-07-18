@@ -74,16 +74,14 @@ class FISTAProblem:
             generalised_gradient = momentum_x.ravel() - new_optimal_x.ravel()
             update_vector = new_optimal_x.ravel() - previous_x.ravel()
             # Loss based restart criterion
-            if generalised_gradient.T@update_vector > 0:
+            if generalised_gradient.T@update_vector > self.smooth_loss(previous_x):
                 momentum_x = previous_x
                 momentum = 1
-                (
-                    new_optimal_x,
-                    new_momentum_x,
-                    new_momentum,
-                ) = self._update_step(
+                # fmt: off
+                new_optimal_x, new_momentum_x, new_momentum = self._update_step(  # noqa: E501
                     previous_x, momentum_x, momentum, self.lipschitz
                 )
+                # fmt: on
 
             # Backtracking line search
             while self._continue_backtracking(

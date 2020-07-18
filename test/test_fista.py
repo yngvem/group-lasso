@@ -30,7 +30,7 @@ def no_regulariser():
 def test_lipschitz_updates_with_small_initial_guess(
     smooth_problem_1d, no_regulariser
 ):
-    f, df, lipschitz = smooth_problem_1d
+    f, df, _ = smooth_problem_1d
     g, prox = no_regulariser
 
     small_L = 0.01
