@@ -286,8 +286,7 @@ class BaseTestGroupLasso:
             assert X2.ravel().shape == (0,)
 
     @pytest.mark.parametrize(
-        "reg,multitarget_groups",
-        product(np.logspace(-5, 2, 8), [True, False])
+        ("reg", "multitarget_groups"), product(np.logspace(-5, 2, 8), [True, False])
     )
     def test_chosen_groups_is_correct(
         self, ml_problem, reg, multitarget_groups
@@ -404,3 +403,27 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
                 diff_sk = np.linalg.norm(yhat2.astype(float) - y.astype(float))
                 assert diff_gl < diff_sk
 
+    @pytest.mark.parametrize(
+        ("reg", "multitarget_groups"), product(np.logspace(-5, 2, 8), [True, False])
+    )
+    def test_chosen_groups_is_correct(
+        self, ml_problem, reg, multitarget_groups
+    ):
+        X, y, w = ml_problem
+        if multitarget_groups:
+            groups = np.random.randint(0, 10, w.shape)
+        else:
+            groups = np.random.randint(0, 10, w.shape[0])
+        gl = self.MLFitter(
+            group_reg=reg, groups=groups, supress_warning=True
+        )
+        gl.fit(X, y)
+        
+        chosen_groups = set(gl.chosen_groups_)
+        for group in np.unique(groups):
+            mask = groups == group
+
+            if group in chosen_groups:
+                assert np.linalg.norm(gl.coef_[mask]) > 1e-8
+            else:
+                assert np.linalg.norm(gl.coef_[mask]) <= 1e-8
