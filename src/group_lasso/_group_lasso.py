@@ -2,10 +2,12 @@ import warnings
 from abc import ABC, abstractmethod
 from math import sqrt
 from numbers import Number
+from functools import wraps
 
 import numpy as np
 import numpy.linalg as la
 from scipy import sparse
+from scipy.special import logsumexp
 from sklearn.base import (
     BaseEstimator,
     ClassifierMixin,
@@ -19,9 +21,9 @@ from sklearn.utils import (
     check_random_state,
 )
 
-from group_lasso._fista import fista
+from group_lasso._fista import FISTAProblem
 from group_lasso._singular_values import find_largest_singular_value
-from group_lasso._subsampling import subsample
+from group_lasso._subsampling import Subsampler
 
 _DEBUG = False
 
@@ -266,12 +268,12 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             Target vector/matrix, ``y.shape == (num_datapoints, num_targets)``,
             or ``y.shape == (num_datapoints,)``
         """
-        X = _add_intercept_col(X)
+        X_aug = _add_intercept_col(X)
         w = _join_intercept(self.intercept_, self.coef_)
-        return self._loss(X, y, w)
+        return self._loss(X_aug, y, w)
 
     @abstractmethod
-    def _compute_lipschitz(self, X, y):  # pragma: nocover
+    def _estimate_lipschitz(self, X, y):  # pragma: nocover
         """Compute Lipschitz bound for the gradient of the unregularised loss.
 
         The Lipschitz bound is with respect to the coefficient vector or
@@ -280,18 +282,18 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         raise NotImplementedError
 
     @abstractmethod
-    def _grad(self, X, y, w):  # pragma: nocover
+    def _grad(self, X_aug, y, w):  # pragma: nocover
         """Compute the gradient of the unregularised loss wrt the coefficients.
         """
         raise NotImplementedError
 
-    def _unregularised_gradient(self, w):
-        g = self._grad(self.X_, self.y_, w)
+    def _unregularised_gradient(self, X_aug, y, w):
+        g = self._grad(X_aug, y, w)
         if not self.fit_intercept:
             g[0] = 0
         return g
 
-    def _scaled_prox(self, w):
+    def _scaled_prox(self, w, lipschitz):
         """Apply the proximal map of the scaled regulariser to ``w``.
 
         The scaling is the inverse lipschitz coefficient.
@@ -300,22 +302,20 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         l1_reg = self.l1_reg
         group_reg_vector = self.group_reg_vector_
         if not self.old_regularisation:
-            l1_reg = l1_reg / self.lipschitz_
-            group_reg_vector = group_reg_vector / self.lipschitz_
+            l1_reg = l1_reg / lipschitz
+            group_reg_vector = np.asarray(group_reg_vector) / lipschitz
 
         w_ = _l1_l2_prox(w_, l1_reg, group_reg_vector, self.groups_)
         return _join_intercept(b, w_)
 
-    def _subsampled_loss(self, w):
-        X_, y_ = self.subsample(self.X_, self.y_)
-        return self._loss(X_, y_, w)
 
     def _minimise_loss(self):
         """Use the FISTA algorithm to solve the group lasso regularised loss.
         """
         # Need transition period before the correct regulariser is used without warning
         def callback(x, it_num, previous_x=None):
-            X_, y_ = self.subsample(self.X_, self.y_)
+            X_, y_ = self.subsampler_.subsample(self.X_, self.y_)
+            self.subsampler_.update_indices()
             w = x
             previous_w = previous_x
 
@@ -336,24 +336,41 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
                         wdiff=la.norm(w - previous_w)
                     )
                 )
+
+                grad_norm = la.norm(self._unregularised_gradient(self.X_, self.y_, w))
                 print("\tWeight norm: {wnorm}".format(wnorm=la.norm(w)))
                 print(
                     "\tGrad: {gnorm}".format(
-                        gnorm=la.norm(self._unregularised_gradient(w))
+                        gnorm=grad_norm
+                    )
+                )
+                print(
+                    "\tRelative grad: {relnorm}".format(
+                        relnorm=grad_norm/la.norm(w)
+                    )
+                )
+                print(
+                    "\tLipschitz: {lipschitz}".format(
+                        lipschitz=optimiser.lipschitz
                     )
                 )
 
         weights = _join_intercept(self.intercept_, self.coef_)
-        weights = fista(
+        optimiser = FISTAProblem(
+            self.subsampler_.subsample_apply(self._unregularised_loss, self.X_, self.y_),
+            self._regulariser,
+            self.subsampler_.subsample_apply(self._unregularised_gradient, self.X_, self.y_),
+            self._scaled_prox,
+            self.lipschitz_
+        )
+        weights = optimiser.minimise(
             weights,
-            grad=self._unregularised_gradient,
-            prox=self._scaled_prox,
-            loss=self._subsampled_loss,
-            lipschitz=self.lipschitz_,
             n_iter=self.n_iter,
             tol=self.tol,
-            callback=callback,
+            callback=callback
         )
+        self.lipschitz_ = optimiser.lipschitz
+        self._optimiser_ = optimiser
         self.intercept_, self.coef_ = _split_intercept(weights)
 
     def _check_valid_parameters(self):
@@ -375,6 +392,13 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         y = check_array(y)
         if len(y.shape) == 1:
             y = y.reshape(-1, 1)
+        
+        # Center X for numerical stability
+        if not sparse.issparse(X) and self.fit_intercept:
+            X_means = X.mean(axis=0, keepdims=True)
+            X = X - X_means
+        else:
+            X_means = np.zeros((1, X.shape[1]))
 
         # Add the intercept column and compute Lipschitz bound the correct way
         if self.fit_intercept:
@@ -382,34 +406,34 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             X = check_array(X, accept_sparse="csr")
 
         if lipschitz is None:
-            lipschitz = self._compute_lipschitz(X, y)
+            lipschitz = self._estimate_lipschitz(X, y)
 
         if not self.fit_intercept:
             X = _add_intercept_col(X)
             X = check_array(X, accept_sparse="csr")
 
-        return X, y, lipschitz
+        return X, X_means, y, lipschitz
 
     def _init_fit(self, X, y, lipschitz):
         """Initialise model and check inputs.
         """
         self.random_state_ = check_random_state(self.random_state)
-        X, y, lipschitz = self._prepare_dataset(X, y, lipschitz)
+        X, X_means, y, lipschitz = self._prepare_dataset(X, y, lipschitz)
         groups = np.array([-1 if i is None else i for i in self.groups])
+
+        self.subsampler_ = Subsampler(X.shape[0], self.subsampling_scheme, self.random_state)
 
         self.groups_ = [self.groups == u for u in np.unique(groups) if u >= 0]
         self.group_reg_vector_ = self._get_reg_vector(self.group_reg)
         self.losses_ = []
 
         if not self.warm_start or not hasattr(self, "coef_"):
-            self.coef_ = self.random_state_.standard_normal(
-                (X.shape[1] - 1, y.shape[1])
-            )
-            self.coef_ /= la.norm(self.coef_)
+            self.coef_ = np.zeros((X.shape[1] - 1, y.shape[1]))
             self.intercept_ = np.zeros((1, self.coef_.shape[1]))
 
         self._check_valid_parameters()
         self.X_, self.y_, self.lipschitz_ = X, y, lipschitz
+        self._X_means_ = X_means
         if not self.old_regularisation and not self.supress_warning:
             warnings.warn(_OLD_REG_WARNING)
 
@@ -418,6 +442,14 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """
         self._init_fit(X, y, lipschitz=lipschitz)
         self._minimise_loss()
+        self.intercept_ -= (self._X_means_@self.coef_).reshape(self.intercept_.shape)
+
+    def _compute_scores(self, X):
+        w = _join_intercept(self.intercept_, self.coef_)
+        if X.shape[1] == self.coef_.shape[0]:
+            X = _add_intercept_col(X)
+        
+        return X@w
 
     @abstractmethod
     def predict(self, X):  # pragma: nocover
@@ -438,11 +470,9 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         )
         return self.sparsity_mask_
 
-
     def _get_chosen_coef_mask(self, coef_):
         mean_abs_coef = abs(coef_.mean())
         return np.abs(coef_) > 1e-10*mean_abs_coef
-
 
     @property
     def sparsity_mask_(self):
@@ -470,13 +500,6 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """
         self.fit(X, y, lipschitz)
         return self.transform(X)
-
-    def subsample(self, *args):
-        """Subsample the input using this class's subsampling scheme.
-        """
-        return subsample(
-            self.subsampling_scheme, random_state=self.random_state_, *args
-        )
 
 
 def _l2_grad(A, b, x):
@@ -623,27 +646,25 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
     def predict(self, X):
         """Predict using the linear model.
         """
-        return self.intercept_ + X @ self.coef_
+        return self._compute_scores(X)
 
-    def _unregularised_loss(self, X, y, w):
-        X_, y_ = self.subsample(X, y)
-        MSE = np.sum((X_ @ w - y_) ** 2) / X_.shape[0]
+    def _unregularised_loss(self, X_aug, y, w):
+        MSE = np.sum((X_aug @ w - y) ** 2) / X_aug.shape[0]
         return 0.5 * MSE
 
-    def _grad(self, X, y, w):
-        X_, y_ = self.subsample(X, y)
-        SSE_grad = _l2_grad(X_, y_, w)
-        return SSE_grad / X_.shape[0]
+    def _grad(self, X_aug, y, w):
+        SSE_grad = _l2_grad(X_aug, y, w)
+        return SSE_grad / X_aug.shape[0]
 
-    def _compute_lipschitz(self, X, y):
-        num_rows, num_cols = X.shape
+    def _estimate_lipschitz(self, X_aug, y):
+        num_rows, num_cols = X_aug.shape
         if self.frobenius_lipchitz:
-            if sparse.issparse(X):
-                return sparse.linalg.norm(X, "fro") ** 2 / num_rows
-            return la.norm(X, "fro") ** 2 / num_rows
+            if sparse.issparse(X_aug):
+                return sparse.linalg.norm(X_aug, "fro") ** 2 / num_rows
+            return la.norm(X_aug, "fro") ** 2 / num_rows
 
         s_max = find_largest_singular_value(
-            X,
+            X_aug,
             subsampling_scheme=self.subsampling_scheme,
             random_state=self.random_state_,
         )
@@ -654,16 +675,17 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
 def _softmax(logit):
     logit = logit - logit.max(1, keepdims=True)
     expl = np.exp(logit)
-    return expl / expl.sum(axis=(logit.ndim - 1), keepdims=True)
-
-
-def _softmax_proba(X, W):
-    return _softmax(X @ W)
+    return expl / expl.sum(axis=1, keepdims=True)
 
 
 def _softmax_cross_entropy(X, Y, W):
-    P = _softmax_proba(X, W)
-    return -np.sum(Y * np.log(P))
+    logit = X@W
+    logit -= logit.max(axis=1, keepdims=True)  # To prevent overflow
+    return -np.sum(Y*(logit - logsumexp(logit, axis=1, keepdims=True)))
+    # -np.sum(Y * np.log(_softmax(X@W)))
+    # -np.sum(Y * np.log(np.exp(X@W) / np.sum(np.exp(X@W), axis=1, keepdims=True)))
+    # -np.sum(Y * (np.log(np.exp(X@W)) - np.log(np.sum(np.exp(X@W), axis=1, keepdims=True))))
+    # -np.sum(Y * (X@W - logsumexp(X@W, axis=1, keepdims=True)))
 
 
 class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
@@ -788,30 +810,23 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
             supress_warning=supress_warning,
         )
 
-    def _compute_proba(self, X, w):
-        return _softmax_proba(X, w)
+    def _unregularised_loss(self, X_aug, y, w):
+        return _softmax_cross_entropy(X_aug, y, w).sum() / X_aug.shape[0]
 
-    def _unregularised_loss(self, X, y, w):
-        X_, y_ = self.subsample(X, y)
-        return _softmax_cross_entropy(X_, y_, w).sum() / X.shape[0]
+    def _grad(self, X_aug, y, w):
+        p = _softmax(X_aug@w)
 
-    def _grad(self, X, y, w):
-        X_, y_ = self.subsample(X, y)
-        p = _softmax_proba(X_, w)
+        return X_aug.T @ (p - y) / X_aug.shape[0]
 
-        return X_.T @ (p - y_) / X_.shape[0]
-
-    def _compute_lipschitz(self, X, y):
-        if sparse.issparse(X):
-            norm = sparse.linalg.norm(X, "fro")
+    def _estimate_lipschitz(self, X_aug, y):
+        if sparse.issparse(X_aug):
+            return sparse.linalg.norm(X_aug, "fro")
         else:
-            norm = la.norm(X, "fro")
-
-        C = y.shape[-1]
-        return 2 * C ** (1 / 4) * norm / X.shape[0]
+            return la.norm(X_aug, "fro")
 
     def predict_proba(self, X):
-        return _softmax_proba(X, self.coef_).T
+        scores = self._compute_scores(X)
+        return _softmax(scores).T
 
     def predict(self, X):
         """Predict using the linear model.
@@ -842,16 +857,23 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
                 "array or a 1D array with class labels as array elements."
             )
 
+        # Center X for numerical stability
+        if not sparse.issparse(X) and self.fit_intercept:
+            X_means = X.mean(axis=0, keepdims=True)
+            X = X - X_means
+        else:
+            X_means = np.zeros((1, X.shape[1]))
+
         # Add the intercept column and compute Lipschitz bound the correct way
         if self.fit_intercept:
             X = _add_intercept_col(X)
             X = check_array(X, accept_sparse="csr")
 
         if lipschitz is None:
-            lipschitz = self._compute_lipschitz(X, y)
+            lipschitz = np.abs(X).max(1).mean()
 
         if not self.fit_intercept:
             X = _add_intercept_col(X)
             X = check_array(X, accept_sparse="csr")
 
-        return X, y, lipschitz
+        return X, X_means, y, lipschitz
