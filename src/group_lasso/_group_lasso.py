@@ -484,7 +484,8 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         else:
             sparsity_mask = self._get_chosen_coef_mask(self.coef_).ravel()
         groups = np.asarray(self.groups).ravel()
-        
+        # TODO: Add regression test with list input for groups
+
         return set(np.unique(groups[sparsity_mask]))
 
     def transform(self, X):
