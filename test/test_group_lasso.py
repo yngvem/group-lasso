@@ -61,7 +61,9 @@ class BaseTestGroupLasso:
 
     @pytest.fixture
     def gl_no_reg(self):
-        return self.MLFitter(l1_reg=0, group_reg=0, groups=[], supress_warning=True)
+        return self.MLFitter(
+            l1_reg=0, group_reg=0, groups=[], supress_warning=True
+        )
 
     @pytest.fixture
     def sklearn_no_reg(self):
@@ -103,7 +105,10 @@ class BaseTestGroupLasso:
         X, y, w = ml_problem
         groups = np.random.randint(1, 5, size=w.shape)
         gl = self.MLFitter(
-            group_reg=1, groups=groups, fit_intercept=True, supress_warning=True
+            group_reg=1,
+            groups=groups,
+            fit_intercept=True,
+            supress_warning=True,
         )
 
         gl.fit(X, y)
@@ -142,37 +147,6 @@ class BaseTestGroupLasso:
         assert gl._regulariser(w2) == pytest.approx(
             regulariser + np.linalg.norm(w.ravel(), 1) * reg
         )
-
-    def test_lipschits(self, gl_no_reg, ml_problem):
-        X, y, w = ml_problem
-
-        for gl in self.all_configs(gl_no_reg):
-            gl._init_fit(X, y, lipschitz=None)
-            L = gl._compute_lipschitz(X, y)
-
-            g1 = gl._grad(X, y, w)
-            for i in range(100):
-                w2 = self.random_weights() * i
-
-                g2 = gl._grad(X, y, w2)
-
-                assert la.norm(g1 - g2) <= L * la.norm(w - w2)
-
-    def test_lipschits_sparse(self, gl_no_reg, sparse_ml_problem):
-        X, y, w = sparse_ml_problem
-        X = X.toarray()
-
-        for gl in self.all_configs(gl_no_reg):
-            gl._init_fit(X, y, lipschitz=None)
-            L = gl._compute_lipschitz(X, y)
-
-            g1 = gl._grad(X, y, w)
-            for i in range(100):
-                w2 = self.random_weights() * i
-
-                g2 = gl._grad(X, y, w2)
-
-                assert la.norm(g1 - g2) <= L * la.norm(w - w2)
 
     def test_grad(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
@@ -317,8 +291,8 @@ class BaseTestGroupLasso:
             assert X2.ravel().shape == (0,)
 
     @pytest.mark.parametrize(
-        "reg,multitarget_groups",
-        product(np.logspace(-5, 2, 8), [True, False])
+        ("reg", "multitarget_groups"),
+        product(np.logspace(-5, 2, 8), [True, False]),
     )
     def test_chosen_groups_is_correct(
         self, ml_problem, reg, multitarget_groups
@@ -328,11 +302,9 @@ class BaseTestGroupLasso:
             groups = np.random.randint(0, 10, w.shape)
         else:
             groups = np.random.randint(0, 10, w.shape[0])
-        gl = self.MLFitter(
-            group_reg=reg, groups=groups, supress_warning=True
-        )
+        gl = self.MLFitter(group_reg=reg, groups=groups, supress_warning=True)
         gl.fit(X, y)
-        
+
         chosen_groups = set(gl.chosen_groups_)
         for group in np.unique(groups):
             mask = groups == group
@@ -342,6 +314,16 @@ class BaseTestGroupLasso:
             else:
                 assert np.linalg.norm(gl.coef_[mask]) <= 1e-8
 
+    def test_changing_intercept_changes_prediction(
+        self, ml_problem, gl_no_reg
+    ):
+        X, y, w = ml_problem
+        gl_no_reg.fit(X, y)
+        pred = gl_no_reg.predict(X)
+        gl_no_reg.intercept_ *= 1e10 * np.random.standard_normal(
+            gl_no_reg.intercept_.shape
+        )
+        assert not all(pred == gl_no_reg.predict(X))
 
 
 class TestGroupLasso(BaseTestGroupLasso):
@@ -425,3 +407,28 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
                 diff_sk = np.linalg.norm(yhat2.astype(float) - y.astype(float))
                 assert diff_gl < diff_sk
 
+    # TODO: This is a copy from base because parametrize didn't work with this subclass.
+    # TODO: Submit issue to pytest repo
+    @pytest.mark.parametrize(
+        ("reg", "multitarget_groups"),
+        product(np.logspace(-5, 2, 8), [True, False]),
+    )
+    def test_chosen_groups_is_correct(
+        self, ml_problem, reg, multitarget_groups
+    ):
+        X, y, w = ml_problem
+        if multitarget_groups:
+            groups = np.random.randint(0, 10, w.shape)
+        else:
+            groups = np.random.randint(0, 10, w.shape[0])
+        gl = self.MLFitter(group_reg=reg, groups=groups, supress_warning=True)
+        gl.fit(X, y)
+
+        chosen_groups = set(gl.chosen_groups_)
+        for group in np.unique(groups):
+            mask = groups == group
+
+            if group in chosen_groups:
+                assert np.linalg.norm(gl.coef_[mask]) > 1e-8
+            else:
+                assert np.linalg.norm(gl.coef_[mask]) <= 1e-8
