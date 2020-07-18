@@ -403,6 +403,8 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
                 diff_sk = np.linalg.norm(yhat2.astype(float) - y.astype(float))
                 assert diff_gl < diff_sk
 
+    # TODO: This is a copy from base because parametrize didn't work with this subclass.
+    # TODO: Submit issue to pytest repo
     @pytest.mark.parametrize(
         ("reg", "multitarget_groups"), product(np.logspace(-5, 2, 8), [True, False])
     )
