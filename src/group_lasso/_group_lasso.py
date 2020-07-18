@@ -2,24 +2,16 @@ import warnings
 from abc import ABC, abstractmethod
 from math import sqrt
 from numbers import Number
-from functools import wraps
 
 import numpy as np
 import numpy.linalg as la
 from scipy import sparse
 from scipy.special import logsumexp
-from sklearn.base import (
-    BaseEstimator,
-    ClassifierMixin,
-    RegressorMixin,
-    TransformerMixin,
-)
+from sklearn.base import (BaseEstimator, ClassifierMixin, RegressorMixin,
+                          TransformerMixin)
 from sklearn.preprocessing import LabelBinarizer
-from sklearn.utils import (
-    check_array,
-    check_consistent_length,
-    check_random_state,
-)
+from sklearn.utils import (check_array, check_consistent_length,
+                           check_random_state)
 
 from group_lasso._fista import FISTAProblem
 from group_lasso._singular_values import find_largest_singular_value
