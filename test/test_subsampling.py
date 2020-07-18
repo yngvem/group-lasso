@@ -76,7 +76,9 @@ def test_random_row_idxes_unique(row_lengths):
 class TestSubsampler:
     def test_subsampling_scheme_1_is_identity(self, row_lengths):
         for row_length in row_lengths():
-            subsampler = _subsampling.Subsampler(row_length, 1, random_state=np.random.RandomState(None))
+            subsampler = _subsampling.Subsampler(
+                row_length, 1, random_state=np.random.RandomState(None)
+            )
             X = np.random.standard_normal((row_length, 5))
             assert np.all(subsampler.subsample(X) == X)
             y = np.random.standard_normal(row_length)

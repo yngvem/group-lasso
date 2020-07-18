@@ -24,7 +24,7 @@ def extract_ohe_groups(onehot_encoder):
     categories = onehot_encoder.categories_
     return np.concatenate(
         [
-            group*np.ones_like(category) 
+            group * np.ones_like(category)
             for group, category in enumerate(categories)
         ]
     )

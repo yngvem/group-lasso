@@ -83,11 +83,12 @@ class Subsampler:
          * sqrt -> subsample sqrt(num_rows) rows
     random_state : np.random.RandomState
     """
+
     def __init__(self, num_indices, subsampling_scheme, random_state):
         self.random_state = random_state
         self.subsampling_scheme = subsampling_scheme
         self.set_num_indices(num_indices)
-    
+
     def set_num_indices(self, num_indices):
         self.num_indices_ = num_indices
         self.update_indices()
@@ -95,12 +96,16 @@ class Subsampler:
     def subsample(self, *Xs):
         if self.subsampling_scheme == 1:
             return _extract_from_singleton_iterable(Xs)
-        
-        return _extract_from_singleton_iterable([X[self.curr_indices_]for X in Xs])
-    
+
+        return _extract_from_singleton_iterable(
+            [X[self.curr_indices_] for X in Xs]
+        )
+
     def update_indices(self):
         self.curr_indices_ = _get_random_row_idxes(
-            self.num_indices_, self.subsampling_scheme, random_state=self.random_state
+            self.num_indices_,
+            self.subsampling_scheme,
+            random_state=self.random_state,
         )
 
     def subsample_apply(self, f, *full_inputs):
@@ -108,4 +113,5 @@ class Subsampler:
         def new_f(*args, **kwargs):
             subsampled_inputs = self.subsample(*full_inputs)
             return f(*subsampled_inputs, *args, **kwargs)
+
         return new_f

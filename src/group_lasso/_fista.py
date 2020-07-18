@@ -6,7 +6,9 @@ import numpy.linalg as la
 
 
 class FISTAProblem:
-    def __init__(self, smooth_loss, proximable_loss, smooth_grad, prox, init_lipschitz):
+    def __init__(
+        self, smooth_loss, proximable_loss, smooth_grad, prox, init_lipschitz
+    ):
         self.smooth_loss = smooth_loss
         self.smooth_grad = smooth_grad
 
@@ -14,7 +16,7 @@ class FISTAProblem:
         self.prox = prox
 
         self.lipschitz = init_lipschitz
-    
+
     def _continue_backtracking(self, new_optimal_x, old_momentum_x, lipschitz):
         # Based on FISTA with backtracking. Reformulation of this criterion:
         # F(new_optimal_x) > Q(new_optimal_x, old_momentum_x)
@@ -27,11 +29,15 @@ class FISTAProblem:
         old_momentum_grad = self.smooth_grad(old_momentum_x)
         update_vector = new_optimal_x - old_momentum_x
 
-        update_distance = np.sum(update_vector**2)*lipschitz/2.5
-        linearised_improvement = old_momentum_grad.ravel().T@update_vector.ravel()
+        update_distance = np.sum(update_vector ** 2) * lipschitz / 2.5
+        linearised_improvement = (
+            old_momentum_grad.ravel().T @ update_vector.ravel()
+        )
 
-        return improved_loss > (old_momentum_loss + update_distance + linearised_improvement)
-    
+        return improved_loss > (
+            old_momentum_loss + update_distance + linearised_improvement
+        )
+
     def compute_next_momentum(self, current_momentum):
         return 0.5 + 0.5 * sqrt(1 + 4 * current_momentum ** 2)
 
@@ -71,23 +77,39 @@ class FISTAProblem:
             if self.smooth_loss(new_optimal_x) > self.smooth_loss(previous_x):
                 momentum_x = previous_x
                 momentum = 1
-                new_optimal_x, new_momentum_x, new_momentum = self._update_step(
+                (
+                    new_optimal_x,
+                    new_momentum_x,
+                    new_momentum,
+                ) = self._update_step(
                     previous_x, momentum_x, momentum, self.lipschitz
                 )
 
             # Backtracking line search
-            while self._continue_backtracking(new_optimal_x, momentum_x, self.lipschitz):
+            while self._continue_backtracking(
+                new_optimal_x, momentum_x, self.lipschitz
+            ):
                 self.lipschitz *= 2
-                new_optimal_x, new_momentum_x, new_momentum = self._update_step(
+                (
+                    new_optimal_x,
+                    new_momentum_x,
+                    new_momentum,
+                ) = self._update_step(
                     optimal_x, momentum_x, momentum, self.lipschitz
                 )
-            optimal_x, momentum_x, momentum = new_optimal_x, new_momentum_x, new_momentum
-                
+            optimal_x, momentum_x, momentum = (
+                new_optimal_x,
+                new_momentum_x,
+                new_momentum,
+            )
 
             if callback is not None:
                 callback(optimal_x, i, previous_x=previous_x)
 
-            if la.norm(optimal_x - previous_x) / la.norm(optimal_x + 1e-16) < tol:
+            if (
+                la.norm(optimal_x - previous_x) / la.norm(optimal_x + 1e-16)
+                < tol
+            ):
                 return optimal_x
 
         warnings.warn(

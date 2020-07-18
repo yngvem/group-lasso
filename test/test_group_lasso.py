@@ -61,7 +61,9 @@ class BaseTestGroupLasso:
 
     @pytest.fixture
     def gl_no_reg(self):
-        return self.MLFitter(l1_reg=0, group_reg=0, groups=[], supress_warning=True)
+        return self.MLFitter(
+            l1_reg=0, group_reg=0, groups=[], supress_warning=True
+        )
 
     @pytest.fixture
     def sklearn_no_reg(self):
@@ -103,7 +105,10 @@ class BaseTestGroupLasso:
         X, y, w = ml_problem
         groups = np.random.randint(1, 5, size=w.shape)
         gl = self.MLFitter(
-            group_reg=1, groups=groups, fit_intercept=True, supress_warning=True
+            group_reg=1,
+            groups=groups,
+            fit_intercept=True,
+            supress_warning=True,
         )
 
         gl.fit(X, y)
@@ -286,7 +291,8 @@ class BaseTestGroupLasso:
             assert X2.ravel().shape == (0,)
 
     @pytest.mark.parametrize(
-        ("reg", "multitarget_groups"), product(np.logspace(-5, 2, 8), [True, False])
+        ("reg", "multitarget_groups"),
+        product(np.logspace(-5, 2, 8), [True, False]),
     )
     def test_chosen_groups_is_correct(
         self, ml_problem, reg, multitarget_groups
@@ -296,11 +302,9 @@ class BaseTestGroupLasso:
             groups = np.random.randint(0, 10, w.shape)
         else:
             groups = np.random.randint(0, 10, w.shape[0])
-        gl = self.MLFitter(
-            group_reg=reg, groups=groups, supress_warning=True
-        )
+        gl = self.MLFitter(group_reg=reg, groups=groups, supress_warning=True)
         gl.fit(X, y)
-        
+
         chosen_groups = set(gl.chosen_groups_)
         for group in np.unique(groups):
             mask = groups == group
@@ -309,17 +313,17 @@ class BaseTestGroupLasso:
                 assert np.linalg.norm(gl.coef_[mask]) > 1e-8
             else:
                 assert np.linalg.norm(gl.coef_[mask]) <= 1e-8
-    
+
     def test_changing_intercept_changes_prediction(
         self, ml_problem, gl_no_reg
     ):
         X, y, w = ml_problem
         gl_no_reg.fit(X, y)
         pred = gl_no_reg.predict(X)
-        gl_no_reg.intercept_ *= 1e10*np.random.standard_normal(gl_no_reg.intercept_.shape)
+        gl_no_reg.intercept_ *= 1e10 * np.random.standard_normal(
+            gl_no_reg.intercept_.shape
+        )
         assert not all(pred == gl_no_reg.predict(X))
-        
-
 
 
 class TestGroupLasso(BaseTestGroupLasso):
@@ -406,7 +410,8 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
     # TODO: This is a copy from base because parametrize didn't work with this subclass.
     # TODO: Submit issue to pytest repo
     @pytest.mark.parametrize(
-        ("reg", "multitarget_groups"), product(np.logspace(-5, 2, 8), [True, False])
+        ("reg", "multitarget_groups"),
+        product(np.logspace(-5, 2, 8), [True, False]),
     )
     def test_chosen_groups_is_correct(
         self, ml_problem, reg, multitarget_groups
@@ -416,11 +421,9 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
             groups = np.random.randint(0, 10, w.shape)
         else:
             groups = np.random.randint(0, 10, w.shape[0])
-        gl = self.MLFitter(
-            group_reg=reg, groups=groups, supress_warning=True
-        )
+        gl = self.MLFitter(group_reg=reg, groups=groups, supress_warning=True)
         gl.fit(X, y)
-        
+
         chosen_groups = set(gl.chosen_groups_)
         for group in np.unique(groups):
             mask = groups == group
