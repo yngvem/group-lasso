@@ -314,7 +314,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """
         # Need transition period before the correct regulariser is used without warning
         def callback(x, it_num, previous_x=None):
-            X_, y_ = self.subsampler_.subsample(self.X_, self.y_)
+            X_, y_ = self.subsampler_.subsample(self.X_aug_, self.y_)
             self.subsampler_.update_indices()
             w = x
             previous_w = previous_x
@@ -337,7 +337,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
                     )
                 )
 
-                grad_norm = la.norm(self._unregularised_gradient(self.X_, self.y_, w))
+                grad_norm = la.norm(self._unregularised_gradient(self.X_aug_, self.y_, w))
                 print("\tWeight norm: {wnorm}".format(wnorm=la.norm(w)))
                 print(
                     "\tGrad: {gnorm}".format(
@@ -357,9 +357,9 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
         weights = _join_intercept(self.intercept_, self.coef_)
         optimiser = FISTAProblem(
-            self.subsampler_.subsample_apply(self._unregularised_loss, self.X_, self.y_),
+            self.subsampler_.subsample_apply(self._unregularised_loss, self.X_aug_, self.y_),
             self._regulariser,
-            self.subsampler_.subsample_apply(self._unregularised_gradient, self.X_, self.y_),
+            self.subsampler_.subsample_apply(self._unregularised_gradient, self.X_aug_, self.y_),
             self._scaled_prox,
             self.lipschitz_
         )
@@ -432,7 +432,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             self.intercept_ = np.zeros((1, self.coef_.shape[1]))
 
         self._check_valid_parameters()
-        self.X_, self.y_, self.lipschitz_ = X, y, lipschitz
+        self.X_aug_, self.y_, self.lipschitz_ = X, y, lipschitz
         self._X_means_ = X_means
         if not self.old_regularisation and not self.supress_warning:
             warnings.warn(_OLD_REG_WARNING)
@@ -485,7 +485,10 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def chosen_groups_(self):
         """A set of the coosen group ids.
         """
-        sparsity_mask = self._get_chosen_coef_mask(self.coef_)
+        if self.groups.ndim == 1:
+            sparsity_mask = self.sparsity_mask_
+        else:
+            sparsity_mask = self._get_chosen_coef_mask(self.coef_)
         return set(np.unique(self.groups.ravel()[sparsity_mask.ravel()]))
 
     def transform(self, X):
