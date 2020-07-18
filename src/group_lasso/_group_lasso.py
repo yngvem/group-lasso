@@ -480,10 +480,12 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """A set of the coosen group ids.
         """
         if self.groups.ndim == 1:
-            sparsity_mask = self.sparsity_mask_
+            sparsity_mask = self.sparsity_mask_.ravel()
         else:
-            sparsity_mask = self._get_chosen_coef_mask(self.coef_)
-        return set(np.unique(self.groups.ravel()[sparsity_mask.ravel()]))
+            sparsity_mask = self._get_chosen_coef_mask(self.coef_).ravel()
+        groups = np.asarray(self.groups).ravel()
+        
+        return set(np.unique(groups[sparsity_mask]))
 
     def transform(self, X):
         """Remove columns corresponding to zero-valued coefficients.
