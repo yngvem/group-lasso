@@ -143,37 +143,6 @@ class BaseTestGroupLasso:
             regulariser + np.linalg.norm(w.ravel(), 1) * reg
         )
 
-    def test_lipschits(self, gl_no_reg, ml_problem):
-        X, y, w = ml_problem
-
-        for gl in self.all_configs(gl_no_reg):
-            gl._init_fit(X, y, lipschitz=None)
-            L = gl._compute_lipschitz(X, y)
-
-            g1 = gl._grad(X, y, w)
-            for i in range(100):
-                w2 = self.random_weights() * i
-
-                g2 = gl._grad(X, y, w2)
-
-                assert la.norm(g1 - g2) <= L * la.norm(w - w2)
-
-    def test_lipschits_sparse(self, gl_no_reg, sparse_ml_problem):
-        X, y, w = sparse_ml_problem
-        X = X.toarray()
-
-        for gl in self.all_configs(gl_no_reg):
-            gl._init_fit(X, y, lipschitz=None)
-            L = gl._compute_lipschitz(X, y)
-
-            g1 = gl._grad(X, y, w)
-            for i in range(100):
-                w2 = self.random_weights() * i
-
-                g2 = gl._grad(X, y, w2)
-
-                assert la.norm(g1 - g2) <= L * la.norm(w - w2)
-
     def test_grad(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
         shape = w.shape
@@ -341,6 +310,16 @@ class BaseTestGroupLasso:
                 assert np.linalg.norm(gl.coef_[mask]) > 1e-8
             else:
                 assert np.linalg.norm(gl.coef_[mask]) <= 1e-8
+    
+    def test_changing_intercept_changes_prediction(
+        self, ml_problem, gl_no_reg
+    ):
+        X, y, w = ml_problem
+        gl_no_reg.fit(X, y)
+        pred = gl_no_reg.predict(X)
+        gl_no_reg.intercept_ *= 1e10*np.random.standard_normal(gl_no_reg.intercept_.shape)
+        assert not all(pred == gl_no_reg.predict(X))
+        
 
 
 
