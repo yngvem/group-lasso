@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Version 1.4.0
+-------------
+
+ * Fixed bug with how LogisticGroupLasso applied intercept in some methods
+ * Implemented backtracking line search for Lipschitz
+ * Added centering-based preconditioning for dense design matrices
+
 Version 1.2.0
 -------------
 
