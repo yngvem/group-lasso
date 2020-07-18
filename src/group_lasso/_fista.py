@@ -113,7 +113,7 @@ class FISTAProblem:
         warnings.warn(
             "The FISTA iterations did not converge to a sufficient minimum.\n"
             "You used subsampling then this is expected, otherwise, "
-            "try to increase the number of iterations "
+            "try increasing the number of iterations "
             "or decreasing the tolerance.",
             RuntimeWarning,
         )
