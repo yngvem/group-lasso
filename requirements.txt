@@ -6,4 +6,5 @@ pytest-randomly
 tox
 sphinx_rtd_theme
 sphinx_gallery
+matplotlib
 numpydoc
