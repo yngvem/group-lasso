@@ -44,6 +44,29 @@ def test_group_l2_prox(reg, n_per_group):
             assert np.linalg.norm(yi) == pytest.approx(0)
 
 
+@pytest.mark.parametrize(
+    ("template, output"),
+    [
+        (None, -1),
+        (3, 3),
+        (-1, -1),
+        ([1, 2, 3], [1, 2, 3]),
+        ([1, 1, 1], [1, 1, 1]),
+        ([-1, -1, -1], [-1, -1, -1]),
+        ([None, None, None], [-1, -1, -1]),
+        ([None, -1, 1], [-1, -1, 1]),
+        ([None, 1, 2], [-1, 1, 2]),
+        ([[None, -1, -1]], [[-1, -1, -1]]),
+        ([[None, 1, 2]], [[-1, 1, 2]]),
+        ([[1, 2, 3]], [[1, 2, 3]]),
+        ([[1, 1, 1]], [[1, 1, 1]]),
+        ([[-1, -1, -1]], [[-1, -1, -1]]),
+        ([[None, 1, 2], [1, 2, 3]], [[-1, 1, 2], [1, 2, 3]]),
+    ]
+)
+def test_parse_group_iterable(template, output):
+    assert _group_lasso._parse_group_iterable(template) == output
+
 class BaseTestGroupLasso:
     MLFitter = _group_lasso.BaseGroupLasso
     UnregularisedMLFitter = None

@@ -76,6 +76,18 @@ def _add_intercept_col(X):
     return np.hstack([ones, X])
 
 
+def _parse_group_iterable(iterable_or_number):
+	try:
+		iter(iterable_or_number)
+	except TypeError:
+		if iterable_or_number is None:
+			return -1
+		else:
+			return iterable_or_number
+	else:
+		return [_parse_group_iterable(i) for i in iterable_or_number]
+
+
 class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     """Base class for sparse group lasso regularised optimisation.
 
@@ -160,7 +172,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        groups,
+        groups=None,
         group_reg=0.05,
         l1_reg=0.00,
         n_iter=100,
@@ -367,7 +379,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """Check that the input parameters are valid.
         """
         assert all(reg >= 0 for reg in self.group_reg_vector_)
-        groups = np.array(self.groups)
+        groups = self.group_ids_
         assert len(self.group_reg_vector_) == len(
             np.unique(groups[groups >= 0])
         )
@@ -379,7 +391,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """
         check_consistent_length(X, y)
         X = check_array(X, accept_sparse="csr")
-        y = check_array(y)
+        y = check_array(y, ensure_2d=False)
         if len(y.shape) == 1:
             y = y.reshape(-1, 1)
 
@@ -408,17 +420,26 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """Initialise model and check inputs.
         """
         self.random_state_ = check_random_state(self.random_state)
-        X, X_means, y, lipschitz = self._prepare_dataset(X, y, lipschitz)
-        groups = np.array([-1 if i is None else i for i in self.groups])
 
         self.subsampler_ = Subsampler(
-            X.shape[0], self.subsampling_scheme, self.random_state
+            X.shape[0], self.subsampling_scheme, self.random_state_
         )
 
-        self.groups_ = [self.groups == u for u in np.unique(groups) if u >= 0]
+        groups = self.groups
+        if groups is None:
+            groups = np.arange(X.shape[1])
+
+        self.group_ids_ = np.array(_parse_group_iterable(groups))
+
+        self.groups_ = [
+            self.group_ids_ == u
+            for u in np.unique(self.group_ids_) if u >= 0
+        ]
         self.group_reg_vector_ = self._get_reg_vector(self.group_reg)
+
         self.losses_ = []
 
+        X, X_means, y, lipschitz = self._prepare_dataset(X, y, lipschitz)
         if not self.warm_start or not hasattr(self, "coef_"):
             self.coef_ = np.zeros((X.shape[1] - 1, y.shape[1]))
             self.intercept_ = np.zeros((1, self.coef_.shape[1]))
@@ -437,6 +458,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         self.intercept_ -= (self._X_means_ @ self.coef_).reshape(
             self.intercept_.shape
         )
+        return self
 
     def _compute_scores(self, X):
         w = _join_intercept(self.intercept_, self.coef_)
@@ -479,11 +501,12 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def chosen_groups_(self):
         """A set of the coosen group ids.
         """
-        if self.groups.ndim == 1:
-            sparsity_mask = self.sparsity_mask_.ravel()
+        groups = self.group_ids_
+        if groups.ndim == 1:
+            sparsity_mask = self.sparsity_mask_
         else:
             sparsity_mask = self._get_chosen_coef_mask(self.coef_).ravel()
-        groups = np.asarray(self.groups).ravel()
+        groups = groups.ravel()
         # TODO: Add regression test with list input for groups
 
         return set(np.unique(groups[sparsity_mask]))
@@ -641,7 +664,7 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
             A Lipshitz bound for the mean squared loss with the given
             data and target matrices. If None, this is estimated.
         """
-        super().fit(X, y, lipschitz=lipschitz)
+        return super().fit(X, y, lipschitz=lipschitz)
 
     def predict(self, X):
         """Predict using the linear model.
