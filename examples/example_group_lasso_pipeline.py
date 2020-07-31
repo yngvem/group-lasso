@@ -83,7 +83,7 @@ pipe = Pipeline(
             "variable_selection",
             GroupLasso(
                 groups=groups,
-                group_reg=20,
+                group_reg=5,
                 l1_reg=0,
                 scale_reg="inverse_group_size",
                 subsampling_scheme=1,
