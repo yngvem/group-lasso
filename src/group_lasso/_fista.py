@@ -3,6 +3,7 @@ from math import sqrt
 
 import numpy as np
 import numpy.linalg as la
+from sklearn.exceptions import ConvergenceWarning
 
 
 class FISTAProblem:
@@ -115,7 +116,7 @@ class FISTAProblem:
             "You used subsampling then this is expected, otherwise, "
             "try increasing the number of iterations "
             "or decreasing the tolerance.",
-            RuntimeWarning,
+            ConvergenceWarning,
         )
 
         return optimal_x
