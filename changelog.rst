@@ -1,6 +1,16 @@
 Changelog
 =========
 
+Version 1.4.1
+-------------
+ * Fixed so GroupLasso objects can be initialised without specifying the groups
+ * Fixed bug with viewing the selected groups
+ * Changed to ConvergenceWarning instead of RuntimeWarning for when FISTA doesn't converge
+ * Fixed typo in warning message
+ * Fixed bug with list input for the groups
+ * Added matplotlib to requirements.txt
+ * Changed how groups are parsed, should hopefully fix some unreported bugs
+
 Version 1.4.0
 -------------
 
