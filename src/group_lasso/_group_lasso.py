@@ -174,7 +174,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         self,
         groups=None,
         group_reg=0.05,
-        l1_reg=0.00,
+        l1_reg=0.05,
         n_iter=100,
         tol=1e-5,
         scale_reg="group_size",
@@ -207,7 +207,7 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         regulariser = 0
         coef_ = _split_intercept(w)[1]
         for group, reg in zip(self.groups_, self.group_reg_vector_):
-            regulariser += reg * la.norm(coef_[group])
+            regulariser += reg * la.norm(coef_[group], 1)
         regulariser += self.l1_reg * la.norm(coef_.ravel(), 1)
         return regulariser
 
