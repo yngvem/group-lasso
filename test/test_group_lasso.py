@@ -7,6 +7,7 @@ import pytest
 from scipy import sparse
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.preprocessing import LabelBinarizer
+from sklearn.utils.estimator_checks import parametrize_with_checks, check_estimator
 
 from group_lasso import _group_lasso
 
@@ -99,6 +100,9 @@ class BaseTestGroupLasso:
     @pytest.fixture
     def sparse_ml_problem(self):
         raise NotImplementedError
+
+    def test_sklearn_compat(self):
+        check_estimator(self.MLFitter)
 
     def random_weights(self):
         return np.random.standard_normal((self.num_cols, 1))
