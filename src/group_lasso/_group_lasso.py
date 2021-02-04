@@ -12,6 +12,8 @@ from sklearn.base import (BaseEstimator, ClassifierMixin, RegressorMixin,
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.utils import (check_array, check_consistent_length,
                            check_random_state)
+from sklearn.utils.multiclass import unique_labels
+from sklearn.exceptions import NotFittedError
 
 from group_lasso._fista import FISTAProblem
 from group_lasso._singular_values import find_largest_singular_value
@@ -198,6 +200,9 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         self.warm_start = warm_start
         self.supress_warning = supress_warning
 
+    def _more_tags(self):
+        return {'multioutput': True}
+
     def _regulariser(self, w):
         """The regularisation penalty for a given coefficient vector, ``w``.
 
@@ -372,7 +377,6 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
             weights, n_iter=self.n_iter, tol=self.tol, callback=callback
         )
         self.lipschitz_ = optimiser.lipschitz
-        self._optimiser_ = optimiser
         self.intercept_, self.coef_ = _split_intercept(weights)
 
     def _check_valid_parameters(self):
@@ -389,9 +393,9 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def _prepare_dataset(self, X, y, lipschitz):
         """Ensure that the inputs are valid and prepare them for fit.
         """
-        check_consistent_length(X, y)
-        X = check_array(X, accept_sparse="csr")
+        X = check_array(X, accept_sparse="csc")
         y = check_array(y, ensure_2d=False)
+
         if len(y.shape) == 1:
             y = y.reshape(-1, 1)
 
@@ -405,14 +409,14 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         # Add the intercept column and compute Lipschitz bound the correct way
         if self.fit_intercept:
             X = _add_intercept_col(X)
-            X = check_array(X, accept_sparse="csr")
+            X = check_array(X, accept_sparse="csc")
 
         if lipschitz is None:
             lipschitz = self._estimate_lipschitz(X, y)
 
         if not self.fit_intercept:
             X = _add_intercept_col(X)
-            X = check_array(X, accept_sparse="csr")
+            X = check_array(X, accept_sparse="csc")
 
         return X, X_means, y, lipschitz
 
@@ -421,13 +425,16 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
         """
         self.random_state_ = check_random_state(self.random_state)
 
+        check_consistent_length(X, y)
+        X, X_means, y, lipschitz = self._prepare_dataset(X, y, lipschitz)
+        
         self.subsampler_ = Subsampler(
             X.shape[0], self.subsampling_scheme, self.random_state_
         )
 
         groups = self.groups
         if groups is None:
-            groups = np.arange(X.shape[1])
+            groups = np.arange(X.shape[1]-1)
 
         self.group_ids_ = np.array(_parse_group_iterable(groups))
 
@@ -439,7 +446,6 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
 
         self.losses_ = []
 
-        X, X_means, y, lipschitz = self._prepare_dataset(X, y, lipschitz)
         if not self.warm_start or not hasattr(self, "coef_"):
             self.coef_ = np.zeros((X.shape[1] - 1, y.shape[1]))
             self.intercept_ = np.zeros((1, self.coef_.shape[1]))
@@ -514,8 +520,16 @@ class BaseGroupLasso(ABC, BaseEstimator, TransformerMixin):
     def transform(self, X):
         """Remove columns corresponding to zero-valued coefficients.
         """
-        if sparse.issparse(X):
-            X = check_array(X, accept_sparse="csc")
+        if not hasattr(self, 'coef_'):
+            raise NotFittedError
+        X = check_array(X, accept_sparse="csc")
+        if X.shape[1] != self.coef_.shape[0]:
+            raise ValueError(
+                "The transformer {} does not raise an error when the number of "
+                "features in transform is different from the number of features in "
+                "fit.".format(self.__class__.__name__)
+            )
+
         return X[:, self.sparsity_mask_]
 
     def fit_transform(self, X, y, lipschitz=None):
@@ -669,7 +683,13 @@ class GroupLasso(BaseGroupLasso, RegressorMixin):
     def predict(self, X):
         """Predict using the linear model.
         """
-        return self._compute_scores(X)
+        if not hasattr(self, 'coef_'):
+            raise NotFittedError
+        X = check_array(X, accept_sparse="csc")
+        scores = self._compute_scores(X)
+        if scores.ndim == 2 and scores.shape[1] == 1:
+            return scores.reshape(scores.shape[0])
+        return scores
 
     def _unregularised_loss(self, X_aug, y, w):
         MSE = np.sum((X_aug @ w - y) ** 2) / X_aug.shape[0]
@@ -832,6 +852,9 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
             old_regularisation=old_regularisation,
             supress_warning=supress_warning,
         )
+    
+    def _more_tags(self):
+        return {'multiclass': True}
 
     def _unregularised_loss(self, X_aug, y, w):
         return _softmax_cross_entropy(X_aug, y, w).sum() / X_aug.shape[0]
@@ -848,19 +871,25 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
             return la.norm(X_aug, "fro")
 
     def predict_proba(self, X):
+        if not hasattr(self, 'coef_'):
+            raise NotFittedError
+        X = check_array(X, accept_sparse="csc")
         scores = self._compute_scores(X)
-        return _softmax(scores).T
+        return _softmax(scores)
 
     def predict(self, X):
         """Predict using the linear model.
         """
-        return np.argmax(self.predict_proba(X), axis=0)[:, np.newaxis]
+        proba = self.predict_proba(X)
+        if proba.shape[1] == 2:
+            proba = proba[:, 1]
+        return self.label_binarizer_.inverse_transform(proba)
 
     def _encode(self, y):
         """One-hot encoding for the labels.
         """
         y = self.label_binarizer_.transform(y)
-        if y.shape[1] == 1:
+        if np.asarray(y).shape[1] == 1:
             ones = np.ones((y.shape[0], 1))
             y = np.hstack(((ones - y.sum(1, keepdims=True)), y,))
         return y
@@ -868,12 +897,14 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
     def _prepare_dataset(self, X, y, lipschitz):
         """Ensure that the inputs are valid and prepare them for fit.
         """
+        self.classes_ = unique_labels(y)
         self.label_binarizer_ = LabelBinarizer()
         self.label_binarizer_.fit(y)
         y = self._encode(y)
         check_consistent_length(X, y)
-        X = check_array(X, accept_sparse="csr")
+        X = check_array(X, accept_sparse="csc")
         check_array(y, ensure_2d=False)
+
         if set(np.unique(y)) != {0, 1}:
             raise ValueError(
                 "The target array must either be a 2D dummy encoded (binary)"
@@ -890,13 +921,13 @@ class LogisticGroupLasso(BaseGroupLasso, ClassifierMixin):
         # Add the intercept column and compute Lipschitz bound the correct way
         if self.fit_intercept:
             X = _add_intercept_col(X)
-            X = check_array(X, accept_sparse="csr")
+            X = check_array(X, accept_sparse="csc")
 
         if lipschitz is None:
             lipschitz = np.abs(X).max(1).mean()
 
         if not self.fit_intercept:
             X = _add_intercept_col(X)
-            X = check_array(X, accept_sparse="csr")
+            X = check_array(X, accept_sparse="csc")
 
         return X, X_means, y, lipschitz
