@@ -104,7 +104,7 @@ class BaseTestGroupLasso:
         raise NotImplementedError
 
     def test_sklearn_compat(self):
-        check_estimator(self.MLFitter)
+        check_estimator(self.MLFitter())
 
     def random_weights(self):
         return np.random.standard_normal((self.num_cols, 1))
