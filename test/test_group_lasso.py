@@ -1,5 +1,6 @@
 from copy import deepcopy
 from itertools import product
+import pickle
 
 import numpy as np
 import numpy.linalg as la
@@ -7,8 +8,10 @@ import pytest
 from scipy import sparse
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.preprocessing import LabelBinarizer
+from sklearn.utils.estimator_checks import parametrize_with_checks, check_estimator
 
-from group_lasso import _group_lasso
+from group_lasso import BaseGroupLasso, GroupLasso, LogisticGroupLasso
+import group_lasso._group_lasso as _group_lasso
 
 np.random.seed(0)
 
@@ -99,6 +102,9 @@ class BaseTestGroupLasso:
     @pytest.fixture
     def sparse_ml_problem(self):
         raise NotImplementedError
+
+    def test_sklearn_compat(self):
+        check_estimator(self.MLFitter)
 
     def random_weights(self):
         return np.random.standard_normal((self.num_cols, 1))
@@ -196,7 +202,6 @@ class BaseTestGroupLasso:
         self, gl_no_reg, sklearn_no_reg, ml_problem
     ):
         X, y, w = ml_problem
-        print(gl_no_reg)
         for gl in self.all_configs(gl_no_reg):
             yhat1 = gl.fit_predict(X, y)
             sklearn_no_reg.fit(X, y)
@@ -208,6 +213,23 @@ class BaseTestGroupLasso:
                 diff_gl = np.linalg.norm(yhat1.astype(float) - y.astype(float))
                 diff_sk = np.linalg.norm(yhat2.astype(float) - y.astype(float))
                 assert diff_gl < diff_sk
+
+    def test_fitted_is_picklable(
+        self, gl_no_reg, ml_problem
+    ):  
+        X, y, w = ml_problem
+        gl = gl_no_reg
+        gl.warm_start = True
+        gl.group_reg = 100
+        try:
+            pickle.dumps(gl)
+        except pickle.PicklingError:
+            assert False, "Cannot pickle unfitted estimator"
+        gl.fit(X, y)
+        try:
+            pickle.dumps(gl)
+        except pickle.PicklingError:
+            assert False, "Cannot pickle fitted estimator"
 
     def test_warm_start_is_possible(self, gl_no_reg, ml_problem):
         X, y, w = ml_problem
@@ -346,11 +368,11 @@ class BaseTestGroupLasso:
         gl_no_reg.intercept_ *= 1e10 * np.random.standard_normal(
             gl_no_reg.intercept_.shape
         )
-        assert not all(pred == gl_no_reg.predict(X))
+        assert not np.allclose(pred, gl_no_reg.predict(X))
 
 
 class TestGroupLasso(BaseTestGroupLasso):
-    MLFitter = _group_lasso.GroupLasso
+    MLFitter = GroupLasso
     UnregularisedMLFitter = LinearRegression
 
     @pytest.fixture
@@ -370,7 +392,7 @@ class TestGroupLasso(BaseTestGroupLasso):
 
 
 class TestLogisticGroupLasso(BaseTestGroupLasso):
-    MLFitter = _group_lasso.LogisticGroupLasso
+    MLFitter = LogisticGroupLasso
     UnregularisedMLFitter = LogisticRegression
     num_classes = 5
 
@@ -404,9 +426,9 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
         X, y, w = ml_problem
         sklearn_no_reg.set_params(multi_class="multinomial", solver="lbfgs")
         for gl in self.all_configs(gl_no_reg):
-            yhat1 = gl.fit_predict(X, y)
-            sklearn_no_reg.fit(X, np.argmax(y, axis=1)[:, np.newaxis])
-            yhat2 = sklearn_no_reg.predict(X)[:, np.newaxis]
+            yhat1 = gl.fit_predict(X, np.argmax(y, axis=1))
+            sklearn_no_reg.fit(X, np.argmax(y, axis=1))
+            yhat2 = sklearn_no_reg.predict(X)
 
             assert np.mean(yhat1 != yhat2) < 5e-2
 
@@ -417,8 +439,8 @@ class TestLogisticGroupLasso(BaseTestGroupLasso):
         sklearn_no_reg.n_iter = 1000
         sklearn_no_reg.tol = 1e-10
         for gl in self.all_configs(gl_no_reg):
-            yhat1 = gl.fit_predict(X, y)
-            sklearn_no_reg.fit(X, np.argmax(y, axis=1))
+            yhat1 = gl.fit_predict(X, np.argmax(y, axis=1)[:, np.newaxis])
+            sklearn_no_reg.fit(X, np.argmax(y, axis=1)[:, np.newaxis])
             yhat2 = sklearn_no_reg.predict(X).reshape(yhat1.shape)
 
             yhat1 = gl._encode(yhat1)
