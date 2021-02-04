@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Version 1.5.0
+-------------
+ * Improved scikit-learn compatibility
+ * Fixed bug where fitted estimators were unpicklable
+
 Version 1.4.1
 -------------
  * Fixed so GroupLasso objects can be initialised without specifying the groups
