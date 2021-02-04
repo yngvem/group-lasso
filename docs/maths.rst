@@ -91,17 +91,9 @@ The Lipschitz coefficient of the gradient to the sum-of-squares loss is given
 by :math:`\sigma_1^2`, where :math:`\sigma_1` is the largest singular value
 of the data matrix.
 
-I have not found a published expression for the Lipschitz coefficient of the
-sigmoid cross-entropy loss. Therefore, I derived the following bound:
-
-.. math::
-
-    L = \sqrt{12} ||\mathbf{X}||_F,
-
-where :math:`||\mathbf{\cdot}||_F = \sqrt{\sum_{i, j} \mathbf{X}_{i, j}^2}` is
-the Frobenius norm. The next step to get group lasso regularised logistic
-regression is deriving the Lipschitz bound for the gradient of the softmax
-cross-entropy loss.
+For logistic regression, we use the line search algorithm presented in [2]_ to
+estimate the Lipschitz bound, with an initial guess given by the Frobenius norm
+of the data matrix.
 
 References
 ----------

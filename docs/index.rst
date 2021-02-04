@@ -49,7 +49,7 @@ was defined as regularised linear regression with the following loss function
 
 .. math::
 
-    \text{arg} \min_{\mathbf{\beta}_g \in \mathbb{R^{d_g}}} 
+    \text{arg} \frac{1}{n} \min_{\mathbf{\beta}_g \in \mathbb{R^{d_g}}} 
     || \sum_{g \in \mathcal{G}} \left[\mathbf{X}_g\mathbf{\beta}_g\right] - \mathbf{y} ||_2^2
     + \lambda_1 ||\mathbf{\beta}||_1
     + \lambda_2 \sum_{g \in \mathcal{G}} \sqrt{d_g}||\mathbf{\beta}_g||_2,
