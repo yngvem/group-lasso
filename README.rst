@@ -50,7 +50,7 @@ sparse group lasso solver being fully scikit-learn API compliant.
 About this project
 ------------------
 This project is developed by Yngve Mardal Moe and released under an MIT 
-lisence. I am still working out a few things so changes might come rapidly.
+lisence.
 
 ------------------
 Installation guide
