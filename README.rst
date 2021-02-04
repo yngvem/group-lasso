@@ -6,7 +6,7 @@ Group Lasso
     :target: https://pepy.tech/project/group-lasso
     :alt: PyPI Downloads
 
-.. image:: https://travis-ci.org/yngvem/group-lasso.svg?branch=master
+.. image:: https://github.com/yngvem/group-lasso/workflows/Unit%20tests/badge.svg
     :target: https://github.com/yngvem/group-lasso
 
 .. image:: https://coveralls.io/repos/github/yngvem/group-lasso/badge.svg
