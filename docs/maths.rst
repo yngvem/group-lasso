@@ -21,7 +21,7 @@ define the group lasso regularised loss function as
 
     L(\mathbf{\beta}; \mathbf{X}, \mathbf{y})
      + \lambda_1 ||\mathbf{\beta}||_1
-     + \lambda_2 \sum_{g \in \mathcal{G}} \sqrt{d_g} ||\mathbf{\beta}||_2
+     + \lambda_2 \sum_{g \in \mathcal{G}} \sqrt{d_g} ||\mathbf{\beta}_g||_2
 
 where :math:`\lambda_1` is the parameter-wise regularisation penalty,
 :math:`\lambda_2` is the group-wise regularisation penalty,
