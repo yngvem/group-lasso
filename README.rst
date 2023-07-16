@@ -33,7 +33,7 @@ only a sparse set of these covariate groups have non-zero components.
 
 There are several reasons for why this might be a good idea. Say for example 
 that we have a set of sensors and each of these sensors generate five 
-measurements. We don't want to maintain an unneccesary number of sensors. 
+measurements. We don't want to maintain an unnecessary number of sensors.
 If we try normal LASSO regression, then we will get sparse components. 
 However, these sparse components might not correspond to a sparse set of 
 sensors, since they each generate five measurements. If we instead use group 
@@ -60,12 +60,22 @@ To install group-lasso via ``pip``, simply run the command::
 
     pip install group-lasso
 
-Alternatively, you can manually pull this repository and run the
-``setup.py`` file::
+Alternatively, you can manually pull this repository and run the following commands on macOS/Unix::
 
     git clone https://github.com/yngvem/group-lasso.git
     cd group-lasso
-    python setup.py
+    python3 -m build
+
+On Windows run the following equivalent commands in PowerShell instead::
+
+    git clone https://github.com/yngvem/group-lasso.git
+    cd group-lasso
+    py -m build
+
+``setuptools`` allows you to modify your source code and have the changes taking effect without you having to rebuild and reinstall.
+To install a package without copying any files to your interpreter directory, run at the root::
+
+    pip install --editable .
 
 -------------
 Documentation
