@@ -11,7 +11,7 @@ Also, view ``skglm``'s `Gallery of examples <https://contrib.scikit-learn.org/sk
 
 .. Caution::
 
-    Follow :ref:`this link <old_doc>` to Proceed to old documentation the
+    Follow :ref:`this link <old_doc>` to proceed to the old documentation.
 
 
 .. it mandatory to keep the toctree here although it doesn't show up in the page, otherwise it doesn't show up in sidebar
