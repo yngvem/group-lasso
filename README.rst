@@ -1,4 +1,4 @@
-⚠️⚠️ **Disclaimer** ⚠️⚠️: This package is no longer maintained. View the `old version of the README <./old_README.rst>`.
+⚠️⚠️ **Disclaimer** ⚠️⚠️: This package is no longer maintained. View the `old version of the README <./old_README.rst>`_.
 
 If you are looking for efficient and scikit-learn-like models with group structure such **Group Lasso** and **Group Logistic Regression**, you better opt for `skglm <https://github.com/scikit-learn-contrib/skglm>`_
 
